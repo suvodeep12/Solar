@@ -1,6 +1,6 @@
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
-import { memo, useRef } from 'react';
+import { memo, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { BodySpec } from '../bodies/jpl.ts';
 import type { SceneMoonSpec } from '../bodies/display.ts';
@@ -13,24 +13,59 @@ import { useNasaTexture } from '../textures/nasa.ts';
 
 const TAU = Math.PI * 2;
 
+/** Ring annulus with radial UVs (u = normalized radius, v = 0.5) so band
+ * profiles map correctly from a strip texture. */
+function ringGeometry(inner: number, outer: number, segments: number): THREE.BufferGeometry {
+  const positions: number[] = [];
+  const uvs: number[] = [];
+  const normals: number[] = [];
+  const indices: number[] = [];
+  for (let ring = 0; ring < 2; ring++) {
+    const r = ring === 0 ? inner : outer;
+    const u = ring === 0 ? 0 : 1;
+    for (let i = 0; i <= segments; i++) {
+      const theta = (i / segments) * TAU;
+      positions.push(Math.cos(theta) * r, Math.sin(theta) * r, 0);
+      uvs.push(u, 0.5);
+      normals.push(0, 0, 1);
+    }
+  }
+  for (let i = 0; i < segments; i++) {
+    const a = i;
+    const b = i + 1;
+    const c = i + segments + 2;
+    const d = i + segments + 1;
+    indices.push(a, b, d, b, c, d);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  geometry.setIndex(indices);
+  return geometry;
+}
+
 function Moon({ moon }: { moon: SceneMoonSpec }) {
   const groupRef = useRef<THREE.Group>(null);
   const meshRef = useRef<THREE.Mesh>(null);
+  const textureMode = useUiStore((s) => s.textureMode);
+  const nasaTexture = useNasaTexture('moon', textureMode === 'nasa');
+  const texture = nasaTexture ?? proceduralTexture('moon');
 
   useFrame(() => {
     const days = useTimeStore.getState().days;
     const pos = moonPositionAt(moon, moon.sceneDistance, days);
     groupRef.current?.position.set(pos.x, pos.y, pos.z);
     if (meshRef.current) {
-      meshRef.current.rotation.y = (days * 24 * TAU) / 24;
+      meshRef.current.rotation.y = (days * TAU) / moon.periodDays;
     }
   });
 
   return (
     <group ref={groupRef}>
       <mesh ref={meshRef}>
-        <sphereGeometry args={[moon.sceneRadius, 16, 12]} />
-        <meshStandardMaterial map={proceduralTexture(moon.name.toLowerCase())} roughness={1} />
+        <sphereGeometry args={[moon.sceneRadius, 32, 24]} />
+        <meshStandardMaterial map={texture} roughness={1} />
       </mesh>
     </group>
   );
@@ -45,7 +80,16 @@ export const Planet = memo(function Planet({ spec }: { spec: BodySpec }) {
   const textureMode = useUiStore((s) => s.textureMode);
   const nasaTexture = useNasaTexture(spec.id, textureMode === 'nasa');
   const texture = nasaTexture ?? proceduralTexture(spec.id);
+  const ringTexture = useNasaTexture('saturn_ring', textureMode === 'nasa');
+  const ringMap = ringTexture ?? proceduralTexture('saturn_ring');
   const isSelected = selectedId === spec.id;
+
+  const ringGeo = useMemo(() => {
+    if (!spec.ring || scene.ringInnerScene === undefined || scene.ringOuterScene === undefined) {
+      return null;
+    }
+    return ringGeometry(scene.ringInnerScene, scene.ringOuterScene, 192);
+  }, [spec.ring, scene.ringInnerScene, scene.ringOuterScene]);
 
   useFrame(({ camera }) => {
     const days = useTimeStore.getState().days;
@@ -84,16 +128,14 @@ export const Planet = memo(function Planet({ spec }: { spec: BodySpec }) {
         <meshStandardMaterial map={texture} roughness={1} metalness={0} />
       </mesh>
 
-      {spec.ring && scene.ringInnerScene && scene.ringOuterScene && (
+      {ringGeo && (
         <group rotation-z={spec.axialTiltDeg * (Math.PI / 180)}>
-          <mesh rotation-x={-Math.PI / 2}>
-            <ringGeometry args={[scene.ringInnerScene, scene.ringOuterScene, 96]} />
+          <mesh geometry={ringGeo} rotation-x={-Math.PI / 2}>
             <meshBasicMaterial
-              map={proceduralTexture('saturn_ring')}
+              map={ringMap}
               transparent
               side={THREE.DoubleSide}
               depthWrite={false}
-              opacity={0.92}
             />
           </mesh>
         </group>
@@ -110,11 +152,11 @@ export const Planet = memo(function Planet({ spec }: { spec: BodySpec }) {
         </mesh>
       )}
 
-      <Html center distanceFactor={110} zIndexRange={[40, 0]} className="pointer-events-none">
+      <Html center zIndexRange={[40, 0]} className="pointer-events-none">
         <div
           ref={labelRef}
           onClick={() => useUiStore.getState().select(spec.id)}
-          className="pointer-events-auto cursor-pointer select-none text-[11px] font-mono uppercase tracking-[0.25em] text-white/80 transition-colors hover:text-white [text-shadow:0_0_6px_rgba(0,0,0,0.9)]"
+          className="pointer-events-auto cursor-pointer select-none text-[10px] font-mono uppercase tracking-[0.15em] text-white/80 transition-colors hover:text-white [text-shadow:0_0_6px_rgba(0,0,0,0.9)]"
         >
           {spec.name}
         </div>

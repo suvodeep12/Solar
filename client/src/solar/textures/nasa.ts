@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import * as THREE from 'three';
+import { getMaxAnisotropy } from './anisotropy.ts';
 import sun from '../../assets/textures/2k_sun.jpg';
 import mercury from '../../assets/textures/2k_mercury.jpg';
-import venus from '../../assets/textures/2k_venus_surface.jpg';
+import venus from '../../assets/textures/2k_venus_atmosphere.jpg';
 import earth from '../../assets/textures/2k_earth_daymap.jpg';
 import mars from '../../assets/textures/2k_mars.jpg';
 import jupiter from '../../assets/textures/2k_jupiter.jpg';
@@ -10,11 +11,14 @@ import saturn from '../../assets/textures/2k_saturn.jpg';
 import uranus from '../../assets/textures/2k_uranus.jpg';
 import neptune from '../../assets/textures/2k_neptune.jpg';
 import moon from '../../assets/textures/2k_moon.jpg';
+import saturnRing from '../../assets/textures/saturn_ring_alpha.png';
 
 /**
- * Vendored Solar System Scope 2k texture maps (CC BY 4.0) — served
- * same-origin, no CORS. Bodies without a photo (pluto, ceres, small moons)
- * fall back to procedural textures.
+ * Vendored texture maps — served same-origin, no CORS. Planet spheres: Solar
+ * System Scope 2k photos (CC BY 4.0). Saturn rings: Grant Hutchison's 4k
+ * Celestia ring map (public domain), since solarsystemscope.com blocks the
+ * ring file. Bodies without a photo (pluto, ceres, small moons) fall back to
+ * procedural textures.
  */
 const TEXTURE_URLS: Record<string, string> = {
   sun,
@@ -27,6 +31,7 @@ const TEXTURE_URLS: Record<string, string> = {
   uranus,
   neptune,
   moon,
+  saturn_ring: saturnRing,
 };
 
 export async function fetchNasaTexture(id: string): Promise<THREE.Texture> {
@@ -37,7 +42,7 @@ export async function fetchNasaTexture(id: string): Promise<THREE.Texture> {
       url,
       (texture) => {
         texture.colorSpace = THREE.SRGBColorSpace;
-        texture.anisotropy = 4;
+        texture.anisotropy = getMaxAnisotropy();
         resolve(texture);
       },
       undefined,

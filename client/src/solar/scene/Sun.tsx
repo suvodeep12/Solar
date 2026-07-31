@@ -55,10 +55,10 @@ export function Sun() {
           emissiveIntensity={textureMode === 'nasa' ? 1.15 : 2.2}
         />
       </mesh>
-      <Html center distanceFactor={110} zIndexRange={[40, 0]} className="pointer-events-none">
+      <Html center zIndexRange={[40, 0]} className="pointer-events-none">
         <div
           ref={labelRef}
-          className="text-xs font-mono uppercase tracking-[0.25em] text-white/90 [text-shadow:0_0_8px_rgba(255,157,46,0.9)]"
+          className="text-[10px] font-mono uppercase tracking-[0.15em] text-white/90 [text-shadow:0_0_8px_rgba(255,157,46,0.9)]"
         >
           Sun
         </div>

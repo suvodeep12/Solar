@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { getMaxAnisotropy } from './anisotropy.ts';
 
 /** Seeded PRNG (mulberry32) so procedural textures are stable across renders. */
 function mulberry32(seed: number): () => number {
@@ -21,6 +22,7 @@ function makeCanvas(width: number, height: number): [HTMLCanvasElement, CanvasRe
 function canvasTexture(canvas: HTMLCanvasElement): THREE.CanvasTexture {
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = getMaxAnisotropy();
   return texture;
 }
 

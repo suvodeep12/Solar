@@ -41,7 +41,7 @@ A `server/` (Express 5 + Mongoose API) is planned next.
 
 ## Credits
 
-Planet texture maps by [Solar System Scope](https://www.solarsystemscope.com/textures/) (CC BY 4.0), vendored locally — Pluto, Ceres and small moons use procedural fallbacks.
+Planet texture maps by [Solar System Scope](https://www.solarsystemscope.com/textures/) (CC BY 4.0), vendored locally; Saturn's ring map is Grant Hutchison's [Celestia texture](https://www.classe.cornell.edu/~seb/celestia/hutchison/saturn-rings.html) (public domain). Pluto, Ceres and small moons use procedural fallbacks.
 
 ## Live demo
 
