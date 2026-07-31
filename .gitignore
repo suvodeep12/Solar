@@ -21,3 +21,7 @@ assets
 *.jpeg
 *.webp
 *.mp4
+
+# allow tracked screenshots under docs/ (README hero image)
+!docs/
+!docs/**

@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "test": "vitest run",
+    "verify": "bun run lint && bun run typecheck && bun run test",
     "preview": "vite preview"
   },
   "dependencies": {

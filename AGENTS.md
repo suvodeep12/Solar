@@ -2,17 +2,36 @@
 
 MERN app: React 19 + Vite SPA in `client/`, Express 5 + Mongoose API in `server/`. TypeScript (strict) everywhere. Bun is the runtime and package manager. This file is the canonical spec — code, scripts, and config must match it; if something here contradicts reality, fix the mismatch and update this file.
 
+## Standing directive (user, 2026-07-31)
+
+- Proactively suggest workflow improvements to keep everything 10/10; never stop at "good enough".
+- No mistakes: verify with the full gate and real-browser checks where possible; if something looks off, investigate before moving on.
+- Ask, never assume: ambiguous choices are a question, not a guess.
+- Bleeding edge only: newest stable majors of tools/libraries; prefer fresh solutions over comfortable ones.
+- Any skill, MCP server, plugin, or tool may be used; installing new software on the machine is fine once confirmed by the user.
+- Record every confirmed improvement here so it survives sessions.
+
 ## Commands
 
-Run inside `client/` or `server/` — there is no root package.json, no workspace tooling. Don't create either without asking.
+Run inside `client/` or `server/` — there is no root package.json, no workspace tooling. Don't create either without asking. Root `justfile` provides recipes (`just gate`, `just dev`, `just build`, `just format`, `just audit`, `just fix`) — `just` is installed; verify with `just --list`.
 
 - Install: `bun install` (commit `bun.lock`; add dev deps with `bun add -d`)
 - Dev: `bun run dev` — client: Vite on :5173 (proxy `/api` → `http://localhost:5000` in `vite.config.ts`); server: `bun --watch src/index.ts` on :5000
 - Build: `bun run build` — client: `tsc -b && vite build`; server: `tsc -p tsconfig.json`
 - Verify: `bun run lint` (ESLint 9 flat config, `eslint.config.js` — never add `.eslintrc*`) · `bun run typecheck` · `bun run format` (Prettier: 2-space, single quotes, semicolons)
 - Test: `bun run test` = Vitest; one file: `bunx vitest run src/routes/auth.test.ts`
-- Pre-commit gate: `bun run lint && bun run typecheck && bun run test`
+- Full gate (single command): `bun run verify` = `bun run lint && bun run typecheck && bun run test`
+- Pre-commit gate: `bun run lint && bun run typecheck && bun run test` (lefthook runs it)
 - Scripts must not use Unix-only commands (`rm -rf`, `cp -r`) — they fail on Windows (win32).
+
+## Confirmed improvements (2026-07-31)
+
+- GitHub Actions: `ci.yml` (lint/typecheck/test/audit on push+PR) and `pages.yml` (build → GitHub Pages, `GH_PAGES=1` switches Vite `base` to `/Solar/`; local dev stays `/`). Add a `server/` job to `ci.yml` when server exists
+- Playwright MCP registered globally (`~/.config/opencode/opencode.jsonc`) with Chromium installed — use it for real-browser QA of the WebGL app (jsdom can't run WebGL); restart opencode to load it
+- Vite bundle split via `build.rolldownOptions.output.manualChunks`: `three` chunk (three/fiber/drei/postprocessing/three-stdlib) + `vendor` chunk (react/react-dom/react-query/zustand)
+- `bun run verify` script + root `justfile` recipes (`gate`, `dev`, `build`, `format`, `audit`, `fix`)
+- `.editorconfig` (LF, 2-space, utf-8) at repo root; `.gitignore` allows tracked images under `docs/`
+- Public repo polish: README, MIT LICENSE, description + topics on GitHub, Pages deployment of the client
 
 ## Architecture
 
