@@ -33,6 +33,8 @@ Run inside `client/` or `server/` — there is no root package.json, no workspac
 - `bun run verify` script + root `justfile` recipes (`gate`, `dev`, `build`, `format`, `audit`, `fix`)
 - `.editorconfig` (LF, 2-space, utf-8) at repo root; `.gitignore` allows tracked images under `docs/`
 - Public repo polish: README, MIT LICENSE, description + topics on GitHub, Pages deployment of the client
+- Texture fix: solarsystemscope.com serves NO CORS headers and blocks hotlinking (mars needs a browser UA; pluto is fully server-blocked) — vendored 10 NASA 2K JPGs into `client/src/assets/textures/` (imported statically in `textures/nasa.ts`, loaded via `THREE.TextureLoader`, so no fetch/CORS path; `vite-env.d.ts` types `*.jpg`). Live-site console went from 41 errors to 0; new `client/public/favicon.svg` + `%BASE_URL%` fixed the favicon 404
+- Clickable body labels (label `onClick` → `select()`) solve planet picking at overview zoom (3px bodies); sun emissive 1.15 in NASA mode (2.2 washes out the photosphere)
 
 ## Architecture
 
