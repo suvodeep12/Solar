@@ -75,7 +75,10 @@ export function Sun() {
       <Html center zIndexRange={[40, 0]} className="pointer-events-none">
         <div
           ref={labelRef}
-          onClick={() => useUiStore.getState().select('sun')}
+          onClick={(e) => {
+            e.stopPropagation();
+            useUiStore.getState().select('sun');
+          }}
           className="pointer-events-auto cursor-pointer select-none text-[10px] font-mono uppercase tracking-[0.15em] text-white/90 transition-colors hover:text-white [text-shadow:0_0_8px_rgba(255,157,46,0.9)]"
         >
           Sun
