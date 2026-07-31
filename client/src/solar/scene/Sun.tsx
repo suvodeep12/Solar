@@ -46,7 +46,7 @@ export function Sun() {
           document.body.style.cursor = 'auto';
         }}
       >
-        <sphereGeometry args={[sunRadiusScene(), 48, 32]} />
+        <sphereGeometry args={[sunRadiusScene(), 64, 48]} />
         <meshStandardMaterial
           map={texture}
           color="#000000"

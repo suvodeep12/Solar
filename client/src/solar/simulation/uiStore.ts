@@ -12,7 +12,7 @@ export interface UiState {
 
 export const useUiStore = create<UiState>((set) => ({
   selectedId: null,
-  textureMode: 'procedural',
+  textureMode: 'nasa',
   select: (id) => set({ selectedId: id }),
   setTextureMode: (mode) => set({ textureMode: mode }),
 }));

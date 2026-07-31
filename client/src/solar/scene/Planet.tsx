@@ -80,7 +80,7 @@ export const Planet = memo(function Planet({ spec }: { spec: BodySpec }) {
           document.body.style.cursor = 'auto';
         }}
       >
-        <sphereGeometry args={[scene.radiusScene, 48, 32]} />
+        <sphereGeometry args={[scene.radiusScene, 64, 48]} />
         <meshStandardMaterial map={texture} roughness={1} metalness={0} />
       </mesh>
 

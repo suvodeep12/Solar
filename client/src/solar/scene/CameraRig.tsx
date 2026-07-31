@@ -41,9 +41,19 @@ export function CameraRig() {
     const f = focus.current;
     const controls = controlsRef.current;
 
-    const offsetDir = camera.position.clone().sub(currentTarget.current);
-    if (offsetDir.lengthSq() > 1e-6) {
-      f.offset.lerp(offsetDir.normalize(), k).normalize();
+    if (selectedId !== null) {
+      const spec = bodyById(selectedId);
+      if (spec) {
+        const days = useTimeStore.getState().days;
+        const p = bodyPositionAt(spec, days);
+        f.pos.set(p.x * AU_UNIT, p.y * AU_UNIT, p.z * AU_UNIT);
+      }
+    }
+
+    const toTarget = camera.position.clone().sub(currentTarget.current);
+    if (toTarget.lengthSq() > 1e-6) {
+      f.offset.lerp(toTarget.clone().normalize(), k).normalize();
+      f.dist = THREE.MathUtils.lerp(f.dist, toTarget.length(), k);
     }
 
     currentTarget.current.lerp(f.pos, k);
