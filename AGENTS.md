@@ -23,6 +23,7 @@ Run inside `client/` or `server/` — there is no root package.json, no workspac
 - Full gate (single command): `bun run verify` = `bun run lint && bun run typecheck && bun run test`
 - Pre-commit gate: `bun run lint && bun run typecheck && bun run test` (lefthook runs it)
 - Scripts must not use Unix-only commands (`rm -rf`, `cp -r`) — they fail on Windows (win32).
+- Long-lived shells (opencode, IDE terminals) carry a stale PATH — prefix commands with `$env:PATH = [Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [Environment]::GetEnvironmentVariable("Path","User")` so freshly installed tools (bun, gh, gitleaks, just) resolve.
 
 ## Confirmed improvements (2026-07-31)
 
