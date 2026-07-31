@@ -52,7 +52,7 @@ export function Sun() {
           color="#000000"
           emissive="#ff9d2e"
           emissiveMap={texture}
-          emissiveIntensity={2.2}
+          emissiveIntensity={textureMode === 'nasa' ? 1.15 : 2.2}
         />
       </mesh>
       <Html center distanceFactor={110} zIndexRange={[40, 0]} className="pointer-events-none">

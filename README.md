@@ -8,7 +8,7 @@ A real-time 3D solar system built with React Three Fiber, running JPL-derived or
 
 - Real JPL orbital data (Kepler elements, J2000 epoch) for the Sun, 8 planets, Ceres, Pluto, Eris — plus 9 moons
 - Time controls: pause, 0.5×–365× speed, jump to real time, reset to J2000
-- Procedural canvas textures by default; toggle NASA photo textures (2K, solarsystemscope.com)
+- NASA 2K photo textures by default (vendored, served same-origin); procedural canvas fallback; toggle in-app
 - Click any body to focus it; orbit lines, asteroid belt, Bloom post-processing
 - 34 unit tests on the pure orbital math; zero WebGL in tests (jsdom can't run it)
 
@@ -38,6 +38,10 @@ client/          React 19 + Vite SPA (TypeScript strict)
 ```
 
 A `server/` (Express 5 + Mongoose API) is planned next.
+
+## Credits
+
+Planet texture maps by [Solar System Scope](https://www.solarsystemscope.com/textures/) (CC BY 4.0), vendored locally — Pluto, Ceres and small moons use procedural fallbacks.
 
 ## Live demo
 

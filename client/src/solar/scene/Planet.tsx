@@ -113,7 +113,8 @@ export const Planet = memo(function Planet({ spec }: { spec: BodySpec }) {
       <Html center distanceFactor={110} zIndexRange={[40, 0]} className="pointer-events-none">
         <div
           ref={labelRef}
-          className="text-[11px] font-mono uppercase tracking-[0.25em] text-white/80 [text-shadow:0_0_6px_rgba(0,0,0,0.9)]"
+          onClick={() => useUiStore.getState().select(spec.id)}
+          className="pointer-events-auto cursor-pointer select-none text-[11px] font-mono uppercase tracking-[0.25em] text-white/80 transition-colors hover:text-white [text-shadow:0_0_6px_rgba(0,0,0,0.9)]"
         >
           {spec.name}
         </div>

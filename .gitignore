@@ -8,6 +8,7 @@ coverage
 .cache
 .opencode/state
 .opencode/sessions
+.playwright-mcp
 pnpm-lock.yaml
 package-lock.json
 yarn.lock
@@ -25,3 +26,9 @@ assets
 # allow tracked screenshots under docs/ (README hero image)
 !docs/
 !docs/**
+
+# allow vendored texture assets (CC BY 4.0, Solar System Scope) + favicon
+!client/src/assets/
+!client/src/assets/**
+!client/public/
+!client/public/**
