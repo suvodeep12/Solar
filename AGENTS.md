@@ -17,6 +17,7 @@ Run inside `client/` or `server/` — there is no root package.json, no workspac
 ## Architecture
 
 - `client/src/`: feature folders; single QueryClient in `lib/queryClient.ts`. TanStack Query v5 owns all server state — never duplicate it into Zustand stores (Zustand is UI state only)
+- `client/src/solar/`: 3D solar system (React Three Fiber v9 + drei + three 0.185; react pinned 19.2.x — r3f peer requires <19.3). Real JPL-derived orbital data in `bodies/jpl.ts` (AU, km, days); scene scaling in `bodies/display.ts` (km→units + visibility floors); Kepler orbit math + J2000 time in `simulation/orbitMath.ts`; time/UI state in Zustand (`simulation/timeStore.ts`, `simulation/uiStore.ts`) — animation reads stores via `getState()` in `useFrame`, never via React selectors. Textures: deterministic procedural canvas (`textures/procedural.ts`) with an optional NASA photo mode (`textures/nasa.ts`, TanStack Query + blob cache, procedural fallback). Scene components in `scene/`, HUD in `hud/` (Tailwind v4). Pure math is unit-tested — don't add scenes/effects to tests (jsdom can't run WebGL)
 - `client/src/api/`: typed fetch wrappers hitting relative `/api/...`; never hardcode an absolute API URL; no CORS middleware in dev (Vite proxy handles it)
 - `server/src/index.ts`: app bootstrap + `app.listen`; routers in `src/routes/` mounted under `/api`; Mongoose schemas in `src/models/`; business logic in `src/services/`
 - Client and server have separate package.json files; shared types are duplicated deliberately — no shared package
