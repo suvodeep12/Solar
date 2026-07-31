@@ -1,0 +1,19 @@
+glob_matcher: doublestar
+
+pre-commit:
+  parallel: true
+  commands:
+    lint:
+      glob: "**/*.{ts,tsx,js,jsx,json,md,css}"
+      run: if [ -d client ]; then bun --cwd client run lint; fi && if [ -d server ]; then bun --cwd server run lint; fi
+    format:
+      glob: "**/*.{ts,tsx,js,jsx,json,md,css}"
+      run: if [ -d client ]; then bun --cwd client run format; fi && if [ -d server ]; then bun --cwd server run format; fi
+      stage_fixed: true
+    secrets:
+      run: gitleaks protect --staged --redact -v
+
+pre-push:
+  commands:
+    typecheck:
+      run: if [ -d client ]; then bun --cwd client run typecheck; fi && if [ -d server ]; then bun --cwd server run typecheck; fi
