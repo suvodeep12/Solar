@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { useEffect, useRef } from 'react';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { bodyById } from '../bodies/jpl.ts';
-import { sceneBody } from '../bodies/display.ts';
+import { sceneBody, sunRadiusScene } from '../bodies/display.ts';
 import { AU_UNIT, bodyPositionAt } from '../simulation/orbitMath.ts';
 import { useTimeStore } from '../simulation/timeStore.ts';
 import { useUiStore } from '../simulation/uiStore.ts';
@@ -33,11 +33,16 @@ export function CameraRig() {
     }
     const spec = bodyById(selectedId);
     if (!spec) return;
-    const scene = sceneBody(spec);
-    const days = useTimeStore.getState().days;
-    const p = bodyPositionAt(spec, days);
-    focus.current.pos.set(p.x * AU_UNIT, p.y * AU_UNIT, p.z * AU_UNIT);
-    focus.current.targetDist = Math.max(scene.radiusScene * 12, 0.8);
+    if (spec.kind === 'star') {
+      focus.current.pos.set(0, 0, 0);
+      focus.current.targetDist = Math.max(sunRadiusScene() * 12, 0.8);
+    } else {
+      const scene = sceneBody(spec);
+      const days = useTimeStore.getState().days;
+      const p = bodyPositionAt(spec, days);
+      focus.current.pos.set(p.x * AU_UNIT, p.y * AU_UNIT, p.z * AU_UNIT);
+      focus.current.targetDist = Math.max(scene.radiusScene * 12, 0.8);
+    }
     focus.current.flyTo = true;
   }, [selectedId, focusTick]);
 
@@ -48,7 +53,7 @@ export function CameraRig() {
 
     if (selectedId !== null) {
       const spec = bodyById(selectedId);
-      if (spec) {
+      if (spec && spec.kind !== 'star') {
         const days = useTimeStore.getState().days;
         const p = bodyPositionAt(spec, days);
         f.pos.set(p.x * AU_UNIT, p.y * AU_UNIT, p.z * AU_UNIT);

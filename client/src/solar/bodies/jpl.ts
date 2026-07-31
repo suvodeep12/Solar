@@ -23,7 +23,7 @@ export interface RingSpec {
 export interface BodySpec {
   id: string;
   name: string;
-  kind: BodyKind;
+  kind: Exclude<BodyKind, 'star'>;
   /** Mean radius, km */
   radiusKm: number;
   /** Semi-major axis, AU */
@@ -47,6 +47,7 @@ export interface BodySpec {
 
 /** Sun sits at the origin; never orbits anything */
 export interface StarSpec {
+  kind: 'star';
   id: string;
   name: string;
   radiusKm: number;
@@ -56,6 +57,7 @@ export interface StarSpec {
 }
 
 export const SUN: StarSpec = {
+  kind: 'star',
   id: 'sun',
   name: 'Sun',
   radiusKm: 696_340,
@@ -273,8 +275,10 @@ export const DWARF_PLANETS: BodySpec[] = [
   },
 ];
 
-export const ALL_BODIES: BodySpec[] = [...PLANETS, ...DWARF_PLANETS];
+export type SelectableSpec = BodySpec | StarSpec;
 
-export function bodyById(id: string): BodySpec | undefined {
+export const ALL_BODIES: SelectableSpec[] = [SUN, ...PLANETS, ...DWARF_PLANETS];
+
+export function bodyById(id: string): SelectableSpec | undefined {
   return ALL_BODIES.find((b) => b.id === id);
 }

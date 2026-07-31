@@ -1,5 +1,12 @@
 import { bodyById } from '../bodies/jpl.ts';
+import type { BodySpec, StarSpec } from '../bodies/jpl.ts';
 import { useUiStore } from '../simulation/uiStore.ts';
+
+type Spec = BodySpec | StarSpec;
+
+function isStar(spec: Spec): spec is StarSpec {
+  return spec.kind === 'star';
+}
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
@@ -17,12 +24,14 @@ export function InfoPanel() {
 
   if (!spec) return null;
 
+  const subtitle = isStar(spec) ? 'Star' : spec.kind === 'dwarf' ? 'Dwarf planet' : 'Planet';
+
   return (
     <div className="pointer-events-auto w-72 rounded-lg border border-white/10 bg-black/60 p-4 backdrop-blur-md">
       <div className="mb-2 flex items-start justify-between">
         <div>
           <div className="text-xs font-mono uppercase tracking-[0.3em] text-sky-300/80">
-            {spec.kind === 'dwarf' ? 'Dwarf planet' : 'Planet'}
+            {subtitle}
           </div>
           <h2 className="text-xl font-semibold text-white">{spec.name}</h2>
         </div>
@@ -35,17 +44,26 @@ export function InfoPanel() {
         </button>
       </div>
       <Row label="Radius" value={`${spec.radiusKm.toLocaleString()} km`} />
-      <Row label="Orbit" value={`${spec.distanceAu.toLocaleString()} AU`} />
-      <Row label="Year" value={`${spec.periodDays.toLocaleString()} days`} />
-      <Row label="Eccentricity" value={spec.eccentricity.toFixed(4)} />
-      <Row label="Inclination" value={`${spec.inclinationDeg}\u00b0`} />
-      <Row label="Axial tilt" value={`${spec.axialTiltDeg.toFixed(1)}\u00b0`} />
-      <Row
-        label="Day"
-        value={`${Math.abs(spec.rotationPeriodHours).toFixed(1)} h${spec.rotationPeriodHours < 0 ? ' (retrograde)' : ''}`}
-      />
-      <Row label="Gravity" value={spec.gravity} />
-      <Row label="Moons" value={String(spec.moonsCount)} />
+      {isStar(spec) ? (
+        <>
+          <Row label="Day" value={`${Math.abs(spec.rotationPeriodHours).toFixed(1)} h`} />
+          <Row label="Gravity" value={spec.gravity} />
+        </>
+      ) : (
+        <>
+          <Row label="Orbit" value={`${spec.distanceAu.toLocaleString()} AU`} />
+          <Row label="Year" value={`${spec.periodDays.toLocaleString()} days`} />
+          <Row label="Eccentricity" value={spec.eccentricity.toFixed(4)} />
+          <Row label="Inclination" value={`${spec.inclinationDeg}\u00b0`} />
+          <Row label="Axial tilt" value={`${spec.axialTiltDeg.toFixed(1)}\u00b0`} />
+          <Row
+            label="Day"
+            value={`${Math.abs(spec.rotationPeriodHours).toFixed(1)} h${spec.rotationPeriodHours < 0 ? ' (retrograde)' : ''}`}
+          />
+          <Row label="Gravity" value={spec.gravity} />
+          <Row label="Moons" value={String(spec.moonsCount)} />
+        </>
+      )}
       <p className="mt-3 text-xs leading-relaxed text-white/70">{spec.fact}</p>
     </div>
   );
