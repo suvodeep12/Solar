@@ -17,14 +17,17 @@ export function CameraRig() {
   const focus = useRef({
     pos: new THREE.Vector3(0, 0, 0),
     dist: OVERVIEW_POSITION.length(),
+    targetDist: OVERVIEW_POSITION.length(),
     offset: new THREE.Vector3(0, 0.42, 1).normalize(),
+    flyTo: false,
   });
   const currentTarget = useRef(new THREE.Vector3());
 
   useEffect(() => {
     if (selectedId === null) {
       focus.current.pos.set(0, 0, 0);
-      focus.current.dist = OVERVIEW_POSITION.length();
+      focus.current.targetDist = OVERVIEW_POSITION.length();
+      focus.current.flyTo = false;
       return;
     }
     const spec = bodyById(selectedId);
@@ -33,7 +36,8 @@ export function CameraRig() {
     const days = useTimeStore.getState().days;
     const p = bodyPositionAt(spec, days);
     focus.current.pos.set(p.x * AU_UNIT, p.y * AU_UNIT, p.z * AU_UNIT);
-    focus.current.dist = Math.max(scene.radiusScene * 12, 0.8);
+    focus.current.targetDist = Math.max(scene.radiusScene * 12, 0.8);
+    focus.current.flyTo = true;
   }, [selectedId]);
 
   useFrame(({ camera }, dt) => {
@@ -51,7 +55,12 @@ export function CameraRig() {
     }
 
     const toTarget = camera.position.clone().sub(currentTarget.current);
-    if (toTarget.lengthSq() > 1e-6) {
+    if (f.flyTo) {
+      f.dist = THREE.MathUtils.lerp(f.dist, f.targetDist, k);
+      if (Math.abs(f.dist - f.targetDist) < Math.max(0.01 * f.targetDist, 0.02)) {
+        f.flyTo = false;
+      }
+    } else if (toTarget.lengthSq() > 1e-6) {
       f.offset.lerp(toTarget.clone().normalize(), k).normalize();
       f.dist = THREE.MathUtils.lerp(f.dist, toTarget.length(), k);
     }
