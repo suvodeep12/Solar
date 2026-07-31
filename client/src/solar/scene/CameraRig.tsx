@@ -9,7 +9,17 @@ import { AU_UNIT, bodyPositionAt } from '../simulation/orbitMath.ts';
 import { useTimeStore } from '../simulation/timeStore.ts';
 import { useUiStore } from '../simulation/uiStore.ts';
 
-const OVERVIEW_POSITION = new THREE.Vector3(0, 18, 36);
+const OVERVIEW_DIST = Math.sqrt(18 * 18 + 36 * 36);
+const FLY_DURATION = 1.3;
+
+interface Fly {
+  fromDist: number;
+  toDist: number;
+  /** Unit vector from the click-time camera toward the target */
+  dir: THREE.Vector3;
+  /** Wall-clock seconds when the fly started */
+  t0: number;
+}
 
 export function CameraRig() {
   const controlsRef = useRef<OrbitControlsImpl>(null);
@@ -17,37 +27,45 @@ export function CameraRig() {
   const focusTick = useUiStore((s) => s.focusTick);
   const focus = useRef({
     pos: new THREE.Vector3(0, 0, 0),
-    dist: OVERVIEW_POSITION.length(),
-    targetDist: OVERVIEW_POSITION.length(),
-    offset: new THREE.Vector3(0, 0.42, 1).normalize(),
-    flyTo: false,
+    targetDist: OVERVIEW_DIST,
+    fly: null as Fly | null,
   });
   const currentTarget = useRef(new THREE.Vector3());
 
   useEffect(() => {
+    const f = focus.current;
     if (selectedId === null) {
-      focus.current.pos.set(0, 0, 0);
-      focus.current.targetDist = OVERVIEW_POSITION.length();
-      focus.current.flyTo = false;
+      f.pos.set(0, 0, 0);
+      f.targetDist = OVERVIEW_DIST;
+      f.fly = null;
       return;
     }
     const spec = bodyById(selectedId);
     if (!spec) return;
     if (spec.kind === 'star') {
-      focus.current.pos.set(0, 0, 0);
-      focus.current.targetDist = Math.max(sunRadiusScene() * 12, 0.8);
+      f.pos.set(0, 0, 0);
+      f.targetDist = Math.max(sunRadiusScene() * 12, 0.8);
     } else {
       const scene = sceneBody(spec);
       const days = useTimeStore.getState().days;
       const p = bodyPositionAt(spec, days);
-      focus.current.pos.set(p.x * AU_UNIT, p.y * AU_UNIT, p.z * AU_UNIT);
-      focus.current.targetDist = Math.max(scene.radiusScene * 12, 0.8);
+      f.pos.set(p.x * AU_UNIT, p.y * AU_UNIT, p.z * AU_UNIT);
+      f.targetDist = Math.max(scene.radiusScene * 12, 0.8);
     }
-    focus.current.flyTo = true;
+    const camera = controlsRef.current?.object;
+    if (!camera) return;
+    const fromPos = camera.position;
+    const delta = f.pos.clone().sub(fromPos);
+    const fromDist = Math.max(delta.length(), 1e-3);
+    f.fly = {
+      fromDist,
+      toDist: f.targetDist,
+      dir: delta.normalize(),
+      t0: performance.now() / 1000,
+    };
   }, [selectedId, focusTick]);
 
   useFrame(({ camera }, dt) => {
-    const k = 1 - Math.exp(-dt * 3);
     const f = focus.current;
     const controls = controlsRef.current;
 
@@ -60,22 +78,20 @@ export function CameraRig() {
       }
     }
 
-    const toTarget = camera.position.clone().sub(currentTarget.current);
-    if (f.flyTo) {
-      f.dist = THREE.MathUtils.lerp(f.dist, f.targetDist, k);
-      if (Math.abs(f.dist - f.targetDist) < Math.max(0.01 * f.targetDist, 0.02)) {
-        f.flyTo = false;
-      }
-    } else if (toTarget.lengthSq() > 1e-6) {
-      f.offset.lerp(toTarget.clone().normalize(), k).normalize();
-      f.dist = THREE.MathUtils.lerp(f.dist, toTarget.length(), k);
-    }
+    currentTarget.current.lerp(f.pos, 1 - Math.exp(-dt * 3));
 
-    currentTarget.current.lerp(f.pos, k);
-    const desired = f.pos.clone().add(f.offset.clone().multiplyScalar(f.dist));
-    camera.position.lerp(desired, k);
-    controls?.target.copy(currentTarget.current);
-    controls?.update();
+    if (controls) {
+      if (f.fly) {
+        const elapsed = performance.now() / 1000 - f.fly.t0;
+        const t = Math.min(1, elapsed / FLY_DURATION);
+        const ease = 1 - Math.pow(1 - t, 3);
+        const dist = THREE.MathUtils.lerp(f.fly.fromDist, f.fly.toDist, ease);
+        camera.position.copy(f.pos).addScaledVector(f.fly.dir, -dist);
+        if (t >= 1) f.fly = null;
+      }
+      controls.target.copy(currentTarget.current);
+      controls.update();
+    }
   });
 
   return (
@@ -83,9 +99,12 @@ export function CameraRig() {
       ref={controlsRef}
       makeDefault
       enableDamping
-      dampingFactor={0.08}
-      minDistance={0.4}
+      dampingFactor={0.12}
+      minDistance={0.6}
       maxDistance={140}
+      onStart={() => {
+        focus.current.fly = null;
+      }}
     />
   );
 }
