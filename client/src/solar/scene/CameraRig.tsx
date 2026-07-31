@@ -14,6 +14,7 @@ const OVERVIEW_POSITION = new THREE.Vector3(0, 18, 36);
 export function CameraRig() {
   const controlsRef = useRef<OrbitControlsImpl>(null);
   const selectedId = useUiStore((s) => s.selectedId);
+  const focusTick = useUiStore((s) => s.focusTick);
   const focus = useRef({
     pos: new THREE.Vector3(0, 0, 0),
     dist: OVERVIEW_POSITION.length(),
@@ -38,7 +39,7 @@ export function CameraRig() {
     focus.current.pos.set(p.x * AU_UNIT, p.y * AU_UNIT, p.z * AU_UNIT);
     focus.current.targetDist = Math.max(scene.radiusScene * 12, 0.8);
     focus.current.flyTo = true;
-  }, [selectedId]);
+  }, [selectedId, focusTick]);
 
   useFrame(({ camera }, dt) => {
     const k = 1 - Math.exp(-dt * 3);

@@ -34,6 +34,23 @@ export function Sun() {
   return (
     <group>
       <mesh
+        onClick={(e) => {
+          e.stopPropagation();
+          useUiStore.getState().select('sun');
+        }}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          document.body.style.cursor = 'pointer';
+        }}
+        onPointerOut={() => {
+          document.body.style.cursor = 'auto';
+        }}
+      >
+        <sphereGeometry args={[Math.max(0.6, sunRadiusScene() * 1.5), 16, 12]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
+
+      <mesh
         ref={meshRef}
         onClick={(e) => {
           e.stopPropagation();
@@ -58,7 +75,8 @@ export function Sun() {
       <Html center zIndexRange={[40, 0]} className="pointer-events-none">
         <div
           ref={labelRef}
-          className="text-[10px] font-mono uppercase tracking-[0.15em] text-white/90 [text-shadow:0_0_8px_rgba(255,157,46,0.9)]"
+          onClick={() => useUiStore.getState().select('sun')}
+          className="pointer-events-auto cursor-pointer select-none text-[10px] font-mono uppercase tracking-[0.15em] text-white/90 transition-colors hover:text-white [text-shadow:0_0_8px_rgba(255,157,46,0.9)]"
         >
           Sun
         </div>

@@ -111,6 +111,23 @@ export const Planet = memo(function Planet({ spec }: { spec: BodySpec }) {
   return (
     <group ref={groupRef}>
       <mesh
+        onClick={(e) => {
+          e.stopPropagation();
+          useUiStore.getState().select(spec.id);
+        }}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          document.body.style.cursor = 'pointer';
+        }}
+        onPointerOut={() => {
+          document.body.style.cursor = 'auto';
+        }}
+      >
+        <sphereGeometry args={[Math.max(0.3, scene.radiusScene * 2), 16, 12]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
+
+      <mesh
         ref={meshRef}
         onClick={(e) => {
           e.stopPropagation();
