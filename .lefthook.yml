@@ -6,6 +6,12 @@ pre-commit:
     lint:
       glob: "**/*.{ts,tsx,js,jsx,json,md,css}"
       run: if [ -d client ]; then bun --cwd=client run lint; fi && if [ -d server ]; then bun --cwd=server run lint; fi
+    typecheck:
+      glob: "**/*.{ts,tsx}"
+      run: if [ -d client ]; then bun --cwd=client run typecheck; fi && if [ -d server ]; then bun --cwd=server run typecheck; fi
+    test:
+      glob: "**/*.{ts,tsx}"
+      run: if [ -d client ]; then bun --cwd=client run test; fi && if [ -d server ]; then bun --cwd=server run test; fi
     format:
       glob: "**/*.{ts,tsx,js,jsx,json,md,css}"
       run: if [ -d client ]; then bun --cwd=client run format; fi && if [ -d server ]; then bun --cwd=server run format; fi
