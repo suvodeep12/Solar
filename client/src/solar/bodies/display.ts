@@ -26,7 +26,7 @@ export interface SceneBodySpec {
   moons: SceneMoonSpec[];
 }
 
-function sceneMoon(moon: MoonSpec, planetRadiusScene: number): SceneMoonSpec {
+export function sceneMoonSpec(moon: MoonSpec, planetRadiusScene: number): SceneMoonSpec {
   const ratio = Math.min(0.08, Math.max(0.03, moon.radiusKm / 3_400));
   return {
     ...moon,
@@ -45,7 +45,7 @@ export function sceneBody(spec: BodySpec): SceneBodySpec {
     radiusScene,
     ringInnerScene: spec.ring ? (spec.ring.innerKm / spec.radiusKm) * radiusScene : undefined,
     ringOuterScene: spec.ring ? (spec.ring.outerKm / spec.radiusKm) * radiusScene : undefined,
-    moons: spec.moons.map((m) => sceneMoon(m, radiusScene)),
+    moons: spec.moons.map((m) => sceneMoonSpec(m, radiusScene)),
   };
 }
 

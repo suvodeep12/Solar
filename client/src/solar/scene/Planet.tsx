@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { memo, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { BodySpec } from '../bodies/jpl.ts';
+import { moonId } from '../bodies/jpl.ts';
 import type { SceneMoonSpec } from '../bodies/display.ts';
 import { sceneBody } from '../bodies/display.ts';
 import { AU_UNIT, bodyPositionAt, moonPositionAt } from '../simulation/orbitMath.ts';
@@ -14,6 +15,9 @@ import { useNasaTexture } from '../textures/nasa.ts';
 import { Atmosphere } from './effects/Atmosphere.tsx';
 
 const TAU = Math.PI * 2;
+
+/** Scratch vector for world-position reads inside useFrame (no per-frame alloc) */
+const WORLD_POS = new THREE.Vector3();
 
 /** Fresnel rim glow per body — Earth bright, Venus soft, Mars a dusty haze. */
 const ATMOSPHERES: Record<
@@ -57,28 +61,77 @@ function ringGeometry(inner: number, outer: number, segments: number): THREE.Buf
   return geometry;
 }
 
-function Moon({ moon }: { moon: SceneMoonSpec }) {
+function Moon({ parentId, moon }: { parentId: string; moon: SceneMoonSpec }) {
   const groupRef = useRef<THREE.Group>(null);
   const meshRef = useRef<THREE.Mesh>(null);
+  const labelRef = useRef<HTMLDivElement>(null);
   const textureMode = useUiStore((s) => s.textureMode);
   const nasaTexture = useNasaTexture('moon', textureMode === 'nasa');
   const texture = nasaTexture ?? proceduralTexture('moon');
+  const id = moonId(parentId, moon.name);
 
-  useFrame(() => {
+  useFrame(({ camera }) => {
     const days = useTimeStore.getState().days;
     const pos = moonPositionAt(moon, moon.sceneDistance, days);
     groupRef.current?.position.set(pos.x, pos.y, pos.z);
     if (meshRef.current) {
       meshRef.current.rotation.y = (days * TAU) / moon.periodDays;
     }
+    const label = labelRef.current;
+    if (label) {
+      groupRef.current?.getWorldPosition(WORLD_POS);
+      const d = camera.position.distanceTo(WORLD_POS);
+      label.style.opacity = String(Math.min(1, Math.max(0, (48 - d) / 36)));
+    }
   });
 
   return (
     <group ref={groupRef}>
-      <mesh ref={meshRef}>
+      <mesh
+        ref={meshRef}
+        onClick={(e) => {
+          e.stopPropagation();
+          useUiStore.getState().select(id);
+        }}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          document.body.style.cursor = 'pointer';
+        }}
+        onPointerOut={() => {
+          document.body.style.cursor = 'auto';
+        }}
+      >
         <sphereGeometry args={[moon.sceneRadius, 32, 24]} />
         <meshStandardMaterial map={texture} roughness={1} />
       </mesh>
+      <mesh
+        onClick={(e) => {
+          e.stopPropagation();
+          useUiStore.getState().select(id);
+        }}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          document.body.style.cursor = 'pointer';
+        }}
+        onPointerOut={() => {
+          document.body.style.cursor = 'auto';
+        }}
+      >
+        <sphereGeometry args={[Math.max(0.15, moon.sceneRadius * 3), 16, 12]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
+      <Html center zIndexRange={[40, 0]} className="pointer-events-none">
+        <div
+          ref={labelRef}
+          onClick={(e) => {
+            e.stopPropagation();
+            useUiStore.getState().select(id);
+          }}
+          className="pointer-events-auto cursor-pointer select-none text-[10px] font-mono uppercase tracking-[0.15em] text-white/60 transition-colors hover:text-white [text-shadow:0_0_6px_rgba(0,0,0,0.9)]"
+        >
+          {moon.name}
+        </div>
+      </Html>
     </group>
   );
 }
@@ -211,7 +264,7 @@ export const Planet = memo(function Planet({ spec }: { spec: BodySpec }) {
         )}
 
         {scene.moons.map((m) => (
-          <Moon key={m.name} moon={m} />
+          <Moon key={m.name} parentId={spec.id} moon={m} />
         ))}
 
         {isSelected && (

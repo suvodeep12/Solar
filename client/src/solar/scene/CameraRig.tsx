@@ -3,9 +3,10 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useEffect, useRef } from 'react';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
-import { bodyById } from '../bodies/jpl.ts';
-import { sceneBody, sunRadiusScene } from '../bodies/display.ts';
-import { AU_UNIT, bodyPositionAt } from '../simulation/orbitMath.ts';
+import { bodyById, moonById } from '../bodies/jpl.ts';
+import { sceneBody, sceneMoonSpec, sunRadiusScene } from '../bodies/display.ts';
+import { AU_UNIT, bodyPositionAt, moonPositionAt } from '../simulation/orbitMath.ts';
+import { tiltedPosition } from '../simulation/axialTilt.ts';
 import { useTimeStore } from '../simulation/timeStore.ts';
 import { useUiStore } from '../simulation/uiStore.ts';
 
@@ -21,6 +22,49 @@ interface Fly {
   t0: number;
 }
 
+type TargetKind = 'star' | 'planet' | 'moon';
+
+/** World position + viewing distance for any selectable target (star,
+ *  planet/dwarf, or moon — moons live in the parent's tilted frame). */
+function resolveTarget(
+  id: string,
+  days: number,
+): { pos: THREE.Vector3; dist: number; kind: TargetKind } | null {
+  const body = bodyById(id);
+  if (body) {
+    if (body.kind === 'star') {
+      return {
+        pos: new THREE.Vector3(0, 0, 0),
+        dist: Math.max(sunRadiusScene() * 12, 0.8),
+        kind: 'star',
+      };
+    }
+    const scene = sceneBody(body);
+    const p = bodyPositionAt(body, days);
+    return {
+      pos: new THREE.Vector3(p.x * AU_UNIT, p.y * AU_UNIT, p.z * AU_UNIT),
+      dist: Math.max(scene.radiusScene * 12, 0.8),
+      kind: 'planet',
+    };
+  }
+  const ref = moonById(id);
+  if (!ref) return null;
+  const planetScene = sceneBody(ref.parent);
+  const moonScene = sceneMoonSpec(ref.moon, planetScene.radiusScene);
+  const planetP = bodyPositionAt(ref.parent, days);
+  const local = moonPositionAt(ref.moon, moonScene.sceneDistance, days);
+  const offset = tiltedPosition(local, ref.parent.axialTiltDeg);
+  return {
+    pos: new THREE.Vector3(
+      planetP.x * AU_UNIT + offset.x,
+      planetP.y * AU_UNIT + offset.y,
+      planetP.z * AU_UNIT + offset.z,
+    ),
+    dist: Math.max(moonScene.sceneRadius * 12, 0.6),
+    kind: 'moon',
+  };
+}
+
 export function CameraRig() {
   const controlsRef = useRef<OrbitControlsImpl>(null);
   const selectedId = useUiStore((s) => s.selectedId);
@@ -31,6 +75,7 @@ export function CameraRig() {
     fly: null as Fly | null,
   });
   const currentTarget = useRef(new THREE.Vector3());
+  const prevMoon = useRef<THREE.Vector3 | null>(null);
 
   useEffect(() => {
     const f = focus.current;
@@ -40,18 +85,10 @@ export function CameraRig() {
       f.fly = null;
       return;
     }
-    const spec = bodyById(selectedId);
-    if (!spec) return;
-    if (spec.kind === 'star') {
-      f.pos.set(0, 0, 0);
-      f.targetDist = Math.max(sunRadiusScene() * 12, 0.8);
-    } else {
-      const scene = sceneBody(spec);
-      const days = useTimeStore.getState().days;
-      const p = bodyPositionAt(spec, days);
-      f.pos.set(p.x * AU_UNIT, p.y * AU_UNIT, p.z * AU_UNIT);
-      f.targetDist = Math.max(scene.radiusScene * 12, 0.8);
-    }
+    const target = resolveTarget(selectedId, useTimeStore.getState().days);
+    if (!target) return;
+    f.pos.copy(target.pos);
+    f.targetDist = target.dist;
     const camera = controlsRef.current?.object;
     if (!camera) return;
     const fromPos = camera.position;
@@ -69,14 +106,21 @@ export function CameraRig() {
     const f = focus.current;
     const controls = controlsRef.current;
 
-    if (selectedId !== null) {
-      const spec = bodyById(selectedId);
-      if (spec && spec.kind !== 'star') {
-        const days = useTimeStore.getState().days;
-        const p = bodyPositionAt(spec, days);
-        f.pos.set(p.x * AU_UNIT, p.y * AU_UNIT, p.z * AU_UNIT);
+    const target =
+      selectedId !== null ? resolveTarget(selectedId, useTimeStore.getState().days) : null;
+    if (target) f.pos.copy(target.pos);
+
+    // Moons sweep around their parent fast (days, not years): delta-follow
+    // the moon's displacement so the camera and target stay glued to it
+    // without fighting OrbitControls' wheel/rotate (which own camera.pos).
+    if (target?.kind === 'moon' && !f.fly && prevMoon.current) {
+      const delta = f.pos.clone().sub(prevMoon.current);
+      if (delta.lengthSq() > 1e-14) {
+        camera.position.add(delta);
+        controls?.target.add(delta);
       }
     }
+    prevMoon.current = target?.kind === 'moon' ? f.pos.clone() : null;
 
     currentTarget.current.lerp(f.pos, 1 - Math.exp(-dt * 3));
 

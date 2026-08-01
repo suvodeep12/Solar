@@ -289,3 +289,23 @@ export const ALL_BODIES: SelectableSpec[] = [SUN, ...PLANETS, ...DWARF_PLANETS];
 export function bodyById(id: string): SelectableSpec | undefined {
   return ALL_BODIES.find((b) => b.id === id);
 }
+
+/** Unique selector for a moon, namespaced by its parent body id. */
+export function moonId(parentId: string, moonName: string): string {
+  return `${parentId}_${moonName.toLowerCase().replace(/[^a-z0-9]+/g, '')}`;
+}
+
+export interface MoonRef {
+  parent: BodySpec;
+  moon: MoonSpec;
+}
+
+export function moonById(id: string): MoonRef | undefined {
+  for (const body of ALL_BODIES) {
+    if (body.kind === 'star') continue;
+    for (const moon of body.moons) {
+      if (moonId(body.id, moon.name) === id) return { parent: body, moon };
+    }
+  }
+  return undefined;
+}

@@ -1,4 +1,4 @@
-import { bodyById } from '../bodies/jpl.ts';
+import { bodyById, moonById } from '../bodies/jpl.ts';
 import type { BodySpec, StarSpec } from '../bodies/jpl.ts';
 import { useUiStore } from '../simulation/uiStore.ts';
 
@@ -21,9 +21,43 @@ export function InfoPanel() {
   const selectedId = useUiStore((s) => s.selectedId);
   const select = useUiStore((s) => s.select);
   const spec = selectedId ? bodyById(selectedId) : undefined;
+  const moonRef = spec || !selectedId ? undefined : moonById(selectedId);
+
+  if (!spec && !moonRef) return null;
+
+  if (moonRef) {
+    const { parent, moon } = moonRef;
+    return (
+      <div className="pointer-events-auto w-72 rounded-lg border border-white/10 bg-black/60 p-4 backdrop-blur-md">
+        <div className="mb-2 flex items-start justify-between">
+          <div>
+            <div className="text-xs font-mono uppercase tracking-[0.3em] text-sky-300/80">
+              Moon of {parent.name}
+            </div>
+            <h2 className="text-xl font-semibold text-white">{moon.name}</h2>
+          </div>
+          <button
+            className="rounded px-1.5 font-mono text-white/50 transition-colors hover:bg-white/10 hover:text-white"
+            onClick={() => select(null)}
+            aria-label="Close"
+          >
+            {'\u2715'}
+          </button>
+        </div>
+        <Row label="Radius" value={`${moon.radiusKm.toLocaleString()} km`} />
+        <Row
+          label="Distance"
+          value={`${moon.distancePlanetRadii.toFixed(1)} R\u00a0\u00b7\u00a0${(moon.distancePlanetRadii * parent.radiusKm).toLocaleString()} km`}
+        />
+        <Row label="Orbit" value={`${moon.periodDays.toLocaleString()} days`} />
+        <p className="mt-3 text-xs leading-relaxed text-white/70">
+          Orbits {parent.name} once every {moon.periodDays.toLocaleString()} days.
+        </p>
+      </div>
+    );
+  }
 
   if (!spec) return null;
-
   const subtitle = isStar(spec) ? 'Star' : spec.kind === 'dwarf' ? 'Dwarf planet' : 'Planet';
 
   return (
