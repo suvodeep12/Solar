@@ -4,8 +4,8 @@ Date: 2026-08-01. Pick up where this leaves off. Full spec: AGENTS.md (canonical
 
 ## State
 
-- `main` at `fe1ebd8` ("fix: exact moon-follow pivot through gestures + reviewer round-2 nits"), pushed; CI green; Pages live at https://suvodeep12.github.io/Solar/ (deploys from main push).
-- Working tree clean. `bun run verify` green (8 files / 77 tests) at fe1ebd8.
+- `main` at `57f79df` ("feat: moon transit shadows and lunar eclipses (phase b item 1)"), Phase A + Phase B item 1 done; CI green; Pages live at https://suvodeep12.github.io/Solar/ (deploys from main push).
+- Working tree clean. `bun run verify` green (8 files / 77 tests) at 57f79df.
 - No `server/` dir, no `client/src/api/` — server work explicitly deferred by user ("api later", "Defer DB entirely"). Client-only from here.
 - User wants this client to be "as cool/mindblowing/impressive/10/10 as possible", asked to "use proactively any installed plugins/skills/MCP" — session tools did NOT include anything new (config at `~/.config/opencode/opencode.jsonc` still lists the same 10 plugins + playwright MCP); new installs likely load after an opencode restart. `customize-opencode` skill available if config work is needed.
 
@@ -22,10 +22,11 @@ Date: 2026-08-01. Pick up where this leaves off. Full spec: AGENTS.md (canonical
 3. **Discoverability**: extend `KeyboardHints.tsx` legend with mouse controls ("LMB orbit · RMB pan · wheel zoom · dbl-click focus"); one-time first-load overlay (auto-fades on first pointerdown); double-click-to-focus on bodies (Planet.tsx + Sun.tsx + Moon onClick → add onDoubleClick; careful: double-click also fires two clicks → selection twice is fine, focusTick bumps).
 
 ### Phase B — visuals
-1. **Moon shadows / eclipses** (in `Planet.tsx` `Moon` component + per-moon shadow disc):
-   - Transit spot: black soft disc at planet surface point toward the moon. All math in the tilt frame (Moon's `groupRef.position` IS the tilt-frame local pos — Moon lives inside the tilt group, Planet.tsx:214+271). `spotDir = normalize(moonLocal)`; disc at `spotDir × R×1.002` (R = `scene.radiusScene`), radius = umbra ≈ `moonR × planetDist/moonDist` (moonR = `sceneMoonSpec(...).sceneRadius`, moonDist = `sceneDistance`), opacity ~0.5, `depthTest: true` (hidden on far side), `depthWrite: false`, `renderOrder 3` — same pattern as the ring-shadow band (Planet.tsx:264-269: black 0.32-opacity band, scale 1.002, `[radius, 96, 12, 0, TAU, PI/2−0.245, 0.49]`).
-   - Visibility gate: moon between planet and sun → `dot(normalize(moonLocal), sunLocal) > threshold` (~0.92, tune live). `sunLocal = tiltedPosition(normalize(-bodyPositionAt(parent, days)), axialTiltDeg)` (axialTilt.ts `tiltedPosition`).
-   - Lunar eclipse (reciprocal): moon in planet's umbra → `dot < −threshold` → darken moon material (`material.color.setScalar(~0.2)` via meshRef material access; reset otherwise).
+1. **Moon shadows / eclipses** — DONE (57f79df), verified live:
+   - Transit spot (black 0.5-opacity circle, renderOrder 3, depth-tested) + lunar-eclipse darkening (`material.color.setScalar(0.2/1)`) in `Planet.tsx` `Moon` component; spot mesh is a SIBLING of the moon group (local origin = tilt group = planet center — inside the group its local origin was the moon's orbit position, wrong), `name={moonId}_spot` for probes.
+   - All geometry in the tilt frame: `sunLocal = tiltedPosition(normalize(-bodyPositionAt(parent)), axialTiltDeg)`; gates `dot > cos(sunAng+moonAng)` (transit) / `dot < -cos(max(0, sunAng-planetAng))` (eclipse); sunAng = `asin(sunRadiusScene()/planetDist)` with `planetDist = |bodyPositionAt| × AU_UNIT` (scene units — consistent).
+   - Verified: io transit day 0.885 (dot 0.9985) → spot on Jupiter's day side at the sub-solar limb, scale 0.134 (= `0.039×9.9/2.887` — correct umbra sizing), hides on the far side; Earth lunar eclipses: 42 samples/yr, centered total eclipse at day 88.75, monthly cadence within eclipse seasons (58.75 & 88.75 are 29.5d apart — correct).
+   - Note: jupiter's moons never eclipse (planetAng > sunAng → umbraHalf 0 — physically right for the big visual sun); the umbra cone exists only where `moon.sceneDistance > planetRadius/asin...` (earth ✓).
 2. **Meteors**: new `scene/sky/Meteors.tsx` — pool of ~16 additive `THREE.Line` (or thin stretched sprites) with head + fading tail; spawn every ~8–20s (random), streak 1–2s, fade; `depthWrite false`, `frustumCulled false`; animate in `useFrame` from `clock.elapsedTime`. Keep OUT of the starfield shader (separate component, no shader churn). Visible mainly at overview — fine.
 3. **Lens flare**: new `scene/effects/LensFlare.tsx` — classic sprite-ghost chain along sun→screen-center axis; procedural radial-gradient CanvasTextures (seeded like `procedural.ts` mulberry32); `THREE.SpriteMaterial` additive, `depthTest false`, `depthWrite false`; each frame: sun world pos = origin → NDC → if on-screen (|ndc| < 1), place ~6 ghosts along `normalize(center − sunNdc)` scaled by distance, opacity ∝ distance; hide off-screen. KEEP luminance below bloom threshold (0.85) so it doesn't wash out (the "orange wash" trap from earlier phases).
 4. **Perf hygiene**:
@@ -40,8 +41,9 @@ Date: 2026-08-01. Pick up where this leaves off. Full spec: AGENTS.md (canonical
 
 ## Verification recipes (Playwright MCP, `http://localhost:5173/?debug`, resize 1600×900, dev server runs `bun run dev` in `client/`)
 
-- `window.__solar = { scene, gl, camera, controls }` (dev + `?debug` only). No THREE global — build vectors via `new s.camera.position.constructor()`.
-- Moon meshes carry `name={moonId(parentId, moon.name)}` (e.g. `saturn_titan`, `jupiter_io`, `earth_moon`) — `s.scene.getObjectByName(...).getWorldPosition(v)`.
+- `window.__solar = { scene, gl, camera, controls, time, ui }` (dev + `?debug` only; `time`/`ui` are the zustand stores — `s.time.setState({days, mode:'paused'})`, `s.ui.setState({selectedId})` for scripted scenes). No THREE global — build vectors via `new s.camera.position.constructor()`.
+- Moon meshes carry `name={moonId(parentId, moon.name)}` (e.g. `saturn_titan`, `jupiter_io`, `earth_moon`) — `s.scene.getObjectByName(...).getWorldPosition(v)`; transit spots are `{moonId}_spot` (name suffix `_spot`).
+- Probe gotcha: `getObjectByName('jupiter_io_spot')` may hit a dev/StrictMode stale copy (esp. mid-HMR) — `traverse` all matches and pick the visible one, or reload first.
 - Probes: `t2m = controls.target.distanceTo(moonWorld)`, `c2m = camera.position.distanceTo(moonWorld)`, `miss = |(cam + fwd·c2m) − moonWorld|` (fwd via `getWorldDirection`), `centerPx = |project(moonWorld) − center|`.
 - Label clicks are flaky in dev (StrictMode triples `<Html>` labels): click the moon hit-sphere by computing its screen projection and `page.mouse.click` at that point; or `dispatchEvent(new MouseEvent('click', {bubbles:true}))` on the visible label div (filter `textContent === name && offsetWidth > 0`, prefer on-screen).
 - Pause sim before pixel checks (sim runs 1d/s; `❙❙` button). `page.screenshot` is the reliable pixel path (composer swaps back buffer; `gl.readPixels` returns black unless `gl.render` first).
@@ -80,7 +82,7 @@ Date: 2026-08-01. Pick up where this leaves off. Full spec: AGENTS.md (canonical
 
 ## Next steps (in order)
 
-1. Phase A implementation (CameraRig panOffset + minDistance + hints/dbl-click/overlay) → live verify probes → `bun run verify` → commit (lefthook runs gate) → push.
-2. Phase B: eclipses → meteors → lens flare → perf hygiene, verify each live, commit per item (or per group).
+1. ✅ Phase A (755729e) + Phase B item 1 eclipses (57f79df) — done, committed, verified live.
+2. Phase B: meteors → lens flare → perf hygiene, verify each live, commit per item (or per group).
 3. Phase C: presets + solver + tests → verify → commit.
 4. Final: AGENTS.md bullets for everything confirmed, full gate, push (Pages auto-deploys).
