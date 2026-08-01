@@ -94,6 +94,10 @@ function Moon({ parentId, moon }: { parentId: string; moon: SceneMoonSpec }) {
           e.stopPropagation();
           useUiStore.getState().select(id);
         }}
+        onDoubleClick={(e) => {
+          e.stopPropagation();
+          useUiStore.getState().select(id);
+        }}
         onPointerOver={(e) => {
           e.stopPropagation();
           document.body.style.cursor = 'pointer';
@@ -107,6 +111,10 @@ function Moon({ parentId, moon }: { parentId: string; moon: SceneMoonSpec }) {
       </mesh>
       <mesh
         onClick={(e) => {
+          e.stopPropagation();
+          useUiStore.getState().select(id);
+        }}
+        onDoubleClick={(e) => {
           e.stopPropagation();
           useUiStore.getState().select(id);
         }}
@@ -197,6 +205,10 @@ export const Planet = memo(function Planet({ spec }: { spec: BodySpec }) {
           e.stopPropagation();
           useUiStore.getState().select(spec.id);
         }}
+        onDoubleClick={(e) => {
+          e.stopPropagation();
+          useUiStore.getState().select(spec.id);
+        }}
         onPointerOver={(e) => {
           e.stopPropagation();
           document.body.style.cursor = 'pointer';
@@ -215,6 +227,10 @@ export const Planet = memo(function Planet({ spec }: { spec: BodySpec }) {
         <mesh
           ref={meshRef}
           onClick={(e) => {
+            e.stopPropagation();
+            useUiStore.getState().select(spec.id);
+          }}
+          onDoubleClick={(e) => {
             e.stopPropagation();
             useUiStore.getState().select(spec.id);
           }}

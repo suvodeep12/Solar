@@ -3,6 +3,7 @@ import { InfoPanel } from './hud/InfoPanel.tsx';
 import { KeyboardHints } from './hud/KeyboardHints.tsx';
 import { TextureToggle } from './hud/TextureToggle.tsx';
 import { TimeControls } from './hud/TimeControls.tsx';
+import { WelcomeOverlay } from './hud/WelcomeOverlay.tsx';
 import { useKeyboardShortcuts } from './hud/useKeyboardShortcuts.ts';
 import { SolarSystemScene } from './scene/SolarSystemScene.tsx';
 import { useUiStore } from './simulation/uiStore.ts';
@@ -30,6 +31,8 @@ export function SolarSystem() {
         <TextureToggle />
         <KeyboardHints />
       </div>
+
+      <WelcomeOverlay />
     </div>
   );
 }

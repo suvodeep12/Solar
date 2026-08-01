@@ -46,6 +46,10 @@ export function Sun() {
           e.stopPropagation();
           useUiStore.getState().select('sun');
         }}
+        onDoubleClick={(e) => {
+          e.stopPropagation();
+          useUiStore.getState().select('sun');
+        }}
         onPointerOver={(e) => {
           e.stopPropagation();
           document.body.style.cursor = 'pointer';
@@ -61,6 +65,10 @@ export function Sun() {
       <mesh
         ref={meshRef}
         onClick={(e) => {
+          e.stopPropagation();
+          useUiStore.getState().select('sun');
+        }}
+        onDoubleClick={(e) => {
           e.stopPropagation();
           useUiStore.getState().select('sun');
         }}

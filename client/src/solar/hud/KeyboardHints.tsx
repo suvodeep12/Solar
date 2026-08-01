@@ -7,6 +7,10 @@ export function KeyboardHints() {
       <span className={k}>R</span> realtime · <span className={k}>0</span> reset ·{' '}
       <span className={k}>[ ]</span> body · <span className={k}>T</span> textures ·{' '}
       <span className={k}>ESC</span> overview
+      <div className="mt-1 text-white/30">
+        <span className={k}>LMB</span> orbit · <span className={k}>RMB</span> pan ·{' '}
+        <span className={k}>WHEEL</span> zoom · <span className={k}>DBL-CLICK</span> focus
+      </div>
     </div>
   );
 }
