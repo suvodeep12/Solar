@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { DWARF_PLANETS, PLANETS } from '../bodies/jpl.ts';
 import { setMaxAnisotropy } from '../textures/anisotropy.ts';
 import { useTimeStore } from '../simulation/timeStore.ts';
+import { useUiStore } from '../simulation/uiStore.ts';
 import { AsteroidBelt } from './AsteroidBelt.tsx';
 import { CameraRig } from './CameraRig.tsx';
 import { Comet } from './Comet.tsx';
@@ -37,7 +38,14 @@ function DebugExpose() {
   const controls = useThree((s) => s.controls);
   useEffect(() => {
     if (import.meta.env.DEV && window.location.search.includes('debug')) {
-      (window as unknown as Record<string, unknown>).__solar = { scene, gl, camera, controls };
+      (window as unknown as Record<string, unknown>).__solar = {
+        scene,
+        gl,
+        camera,
+        controls,
+        time: useTimeStore,
+        ui: useUiStore,
+      };
     }
   }, [scene, gl, camera, controls]);
   return null;
