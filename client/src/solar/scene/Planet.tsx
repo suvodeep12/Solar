@@ -154,7 +154,7 @@ export const Planet = memo(function Planet({ spec }: { spec: BodySpec }) {
   const ringOpacity = spec.ring?.opacity ?? 1;
   const cloudTexture = useNasaTexture('earth_clouds', textureMode === 'nasa');
   const cloudMap = cloudTexture ?? proceduralTexture('earth_clouds');
-  const nightTexture = useNasaTexture('earth_night', textureMode === 'nasa');
+  const nightTexture = useNasaTexture('earth_night', textureMode === 'nasa' && spec.id === 'earth');
   const isSelected = selectedId === spec.id;
   const atmosphere = ATMOSPHERES[spec.id];
   const tiltRad = tiltAngleRad(spec.axialTiltDeg);
@@ -224,19 +224,20 @@ export const Planet = memo(function Planet({ spec }: { spec: BodySpec }) {
         >
           <sphereGeometry args={[scene.radiusScene, 64, 48]} />
           <meshStandardMaterial
+            key={spec.id === 'earth' ? (nightTexture ? 'earth-night' : 'earth-day') : undefined}
             map={texture}
             roughness={1}
             metalness={0}
-            emissive={spec.id === 'earth' ? '#ffffff' : '#000000'}
-            emissiveMap={spec.id === 'earth' ? nightTexture : null}
-            emissiveIntensity={spec.id === 'earth' ? 0.85 : 0}
+            emissive={spec.id === 'earth' && nightTexture ? '#ffffff' : '#000000'}
+            emissiveMap={spec.id === 'earth' && nightTexture ? nightTexture : null}
+            emissiveIntensity={spec.id === 'earth' && nightTexture ? 0.85 : 0}
           />
         </mesh>
 
         {spec.id === 'earth' && (
           <mesh ref={cloudsRef} scale={1.013} renderOrder={1}>
             <sphereGeometry args={[scene.radiusScene, 48, 32]} />
-            <meshBasicMaterial map={cloudMap} transparent opacity={0.85} depthWrite={false} />
+            <meshBasicMaterial map={cloudMap} transparent opacity={0.7} depthWrite={false} />
           </mesh>
         )}
 

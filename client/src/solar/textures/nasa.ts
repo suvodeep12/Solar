@@ -60,10 +60,18 @@ export async function fetchNasaTexture(id: string): Promise<THREE.Texture> {
 }
 
 /**
- * The vendored clouds photo has a gray atmospheric halo instead of pure
- * black, so additive blending white-washed the planet. Rewrite it as white
- * pixels with alpha = luminance — normal blending then composites cleanly.
+ * Cloud coverage alpha for a pixel of the vendored clouds photo, in 0..255.
+ * The photo's gray halo is rewritten as white pixels + alpha = luminance².
+ * Scaled below 1 so the brightest storm systems stay translucent — an
+ * unscaled rewrite still white-washes the ocean beneath thick clouds
+ * (verified live: mid-disk reads 240+ where the daymap shows ocean).
  */
+export const CLOUD_ALPHA_SCALE = 0.55;
+
+export function cloudAlpha(lum: number): number {
+  return ((lum * lum) / 255) * CLOUD_ALPHA_SCALE;
+}
+
 function cloudAlphaTexture(image: HTMLImageElement | HTMLCanvasElement): THREE.CanvasTexture {
   const width = image.width;
   const height = image.height;
@@ -75,7 +83,7 @@ function cloudAlphaTexture(image: HTMLImageElement | HTMLCanvasElement): THREE.C
   const data = ctx.getImageData(0, 0, width, height);
   for (let i = 0; i < data.data.length; i += 4) {
     const lum = (data.data[i] + data.data[i + 1] + data.data[i + 2]) / 3;
-    const a = (lum * lum) / 255;
+    const a = cloudAlpha(lum);
     data.data[i] = 255;
     data.data[i + 1] = 255;
     data.data[i + 2] = 255;

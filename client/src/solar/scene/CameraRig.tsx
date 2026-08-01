@@ -76,6 +76,13 @@ export function CameraRig() {
   });
   const currentTarget = useRef(new THREE.Vector3());
   const prevMoon = useRef<THREE.Vector3 | null>(null);
+  /** Any OrbitControls gesture (rotate/zoom/pan) in flight — the follow's
+   *  target-lerp must not fight the user mid-gesture. */
+  const interacting = useRef(false);
+  /** Wall-clock seconds until the follow may re-center again after a manual
+   *  pan: pans stick for ~3s after release, then gently re-aim at the body. */
+  const panPauseUntil = useRef(0);
+  const targetAtGestureStart = useRef(new THREE.Vector3());
 
   useEffect(() => {
     const f = focus.current;
@@ -122,8 +129,10 @@ export function CameraRig() {
     }
     prevMoon.current = target?.kind === 'moon' ? f.pos.clone() : null;
 
-    currentTarget.current.lerp(f.pos, 1 - Math.exp(-dt * 3));
-
+    const now = performance.now() / 1000;
+    if (!interacting.current && now > panPauseUntil.current) {
+      currentTarget.current.lerp(f.pos, 1 - Math.exp(-dt * 3));
+    }
     if (controls) {
       if (f.fly) {
         const elapsed = performance.now() / 1000 - f.fly.t0;
@@ -148,6 +157,16 @@ export function CameraRig() {
       maxDistance={140}
       onStart={() => {
         focus.current.fly = null;
+        interacting.current = true;
+        panPauseUntil.current = performance.now() / 1000 + 3;
+        if (controlsRef.current) targetAtGestureStart.current.copy(controlsRef.current.target);
+      }}
+      onEnd={() => {
+        interacting.current = false;
+        const controls = controlsRef.current;
+        if (controls && targetAtGestureStart.current.distanceTo(controls.target) > 1e-3) {
+          panPauseUntil.current = performance.now() / 1000 + 3;
+        }
       }}
     />
   );
