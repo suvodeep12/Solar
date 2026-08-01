@@ -36,14 +36,16 @@ export function TimeControls() {
           className={buttonClass}
           onClick={togglePaused}
           aria-label={mode === 'paused' ? 'Play' : 'Pause'}
+          title="Space"
         >
           {mode === 'paused' ? '\u25b6' : '\u2759\u2759'}
         </button>
-        {SPEEDS.map((s) => (
+        {SPEEDS.map((s, i) => (
           <button
             key={s}
             className={buttonClass}
             data-active={mode === 'simulated' && speed === s}
+            title={String(i + 1)}
             style={
               mode === 'simulated' && speed === s
                 ? { borderColor: 'rgba(56,189,248,0.7)', color: '#fff' }
@@ -60,10 +62,11 @@ export function TimeControls() {
             mode === 'realtime' ? { borderColor: 'rgba(56,189,248,0.7)', color: '#fff' } : undefined
           }
           onClick={() => setMode(mode === 'realtime' ? 'simulated' : 'realtime')}
+          title="R"
         >
           REAL
         </button>
-        <button className={buttonClass} onClick={reset}>
+        <button className={buttonClass} onClick={reset} title="0">
           RESET
         </button>
       </div>
