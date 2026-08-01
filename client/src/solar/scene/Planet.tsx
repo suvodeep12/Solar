@@ -178,13 +178,7 @@ export const Planet = memo(function Planet({ spec }: { spec: BodySpec }) {
       {spec.id === 'earth' && (
         <mesh ref={cloudsRef} scale={1.013} renderOrder={1}>
           <sphereGeometry args={[scene.radiusScene, 48, 32]} />
-          <meshBasicMaterial
-            map={cloudMap}
-            transparent
-            opacity={0.8}
-            depthWrite={false}
-            blending={THREE.AdditiveBlending}
-          />
+          <meshBasicMaterial map={cloudMap} transparent opacity={0.85} depthWrite={false} />
         </mesh>
       )}
 

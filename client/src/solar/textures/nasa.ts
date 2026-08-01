@@ -45,6 +45,10 @@ export async function fetchNasaTexture(id: string): Promise<THREE.Texture> {
     new THREE.TextureLoader().load(
       url,
       (texture) => {
+        if (id === 'earth_clouds') {
+          resolve(cloudAlphaTexture(texture.image));
+          return;
+        }
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.anisotropy = getMaxAnisotropy();
         resolve(texture);
@@ -53,6 +57,35 @@ export async function fetchNasaTexture(id: string): Promise<THREE.Texture> {
       reject,
     );
   });
+}
+
+/**
+ * The vendored clouds photo has a gray atmospheric halo instead of pure
+ * black, so additive blending white-washed the planet. Rewrite it as white
+ * pixels with alpha = luminance — normal blending then composites cleanly.
+ */
+function cloudAlphaTexture(image: HTMLImageElement | HTMLCanvasElement): THREE.CanvasTexture {
+  const width = image.width;
+  const height = image.height;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d')!;
+  ctx.drawImage(image, 0, 0);
+  const data = ctx.getImageData(0, 0, width, height);
+  for (let i = 0; i < data.data.length; i += 4) {
+    const lum = (data.data[i] + data.data[i + 1] + data.data[i + 2]) / 3;
+    const a = (lum * lum) / 255;
+    data.data[i] = 255;
+    data.data[i + 1] = 255;
+    data.data[i + 2] = 255;
+    data.data[i + 3] = a;
+  }
+  ctx.putImageData(data, 0, 0);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = getMaxAnisotropy();
+  return texture;
 }
 
 /**

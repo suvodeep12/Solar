@@ -293,7 +293,8 @@ function uranusRingTexture(seed: number): THREE.CanvasTexture {
   return canvasTexture(canvas);
 }
 
-/** Cloud cover: white fBm wisps on black — consumed additively over the surface. */
+/** Cloud cover: white fBm wisps, alpha from coverage — consumed over the
+ * surface with normal blending (never black-filled). */
 function cloudsTexture(seed: number): THREE.CanvasTexture {
   const width = 1024;
   const height = 512;
@@ -307,10 +308,10 @@ function cloudsTexture(seed: number): THREE.CanvasTexture {
       const v = (n + streak - 0.55) / 0.4;
       const c = Math.min(1, Math.max(0, v));
       const idx = (y * width + x) * 4;
-      image.data[idx] = Math.floor(c * 255);
-      image.data[idx + 1] = Math.floor(c * 255);
-      image.data[idx + 2] = Math.floor(c * 255);
-      image.data[idx + 3] = 255;
+      image.data[idx] = 255;
+      image.data[idx + 1] = 255;
+      image.data[idx + 2] = 255;
+      image.data[idx + 3] = Math.floor(c * c * 255);
     }
   }
   ctx.putImageData(image, 0, 0);
