@@ -6,6 +6,7 @@ import type { BodySpec } from '../bodies/jpl.ts';
 import type { SceneMoonSpec } from '../bodies/display.ts';
 import { sceneBody } from '../bodies/display.ts';
 import { AU_UNIT, bodyPositionAt, moonPositionAt } from '../simulation/orbitMath.ts';
+import { tiltAngleRad } from '../simulation/axialTilt.ts';
 import { useTimeStore } from '../simulation/timeStore.ts';
 import { useUiStore } from '../simulation/uiStore.ts';
 import { proceduralTexture } from '../textures/procedural.ts';
@@ -103,6 +104,7 @@ export const Planet = memo(function Planet({ spec }: { spec: BodySpec }) {
   const nightTexture = useNasaTexture('earth_night', textureMode === 'nasa');
   const isSelected = selectedId === spec.id;
   const atmosphere = ATMOSPHERES[spec.id];
+  const tiltRad = tiltAngleRad(spec.axialTiltDeg);
 
   const ringGeo = useMemo(() => {
     if (!spec.ring || scene.ringInnerScene === undefined || scene.ringOuterScene === undefined) {
@@ -150,42 +152,44 @@ export const Planet = memo(function Planet({ spec }: { spec: BodySpec }) {
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
 
-      <mesh
-        ref={meshRef}
-        onClick={(e) => {
-          e.stopPropagation();
-          useUiStore.getState().select(spec.id);
-        }}
-        onPointerOver={(e) => {
-          e.stopPropagation();
-          document.body.style.cursor = 'pointer';
-        }}
-        onPointerOut={() => {
-          document.body.style.cursor = 'auto';
-        }}
-      >
-        <sphereGeometry args={[scene.radiusScene, 64, 48]} />
-        <meshStandardMaterial
-          map={texture}
-          roughness={1}
-          metalness={0}
-          emissive={spec.id === 'earth' ? '#ffffff' : '#000000'}
-          emissiveMap={spec.id === 'earth' ? nightTexture : null}
-          emissiveIntensity={spec.id === 'earth' ? 0.85 : 0}
-        />
-      </mesh>
-
-      {spec.id === 'earth' && (
-        <mesh ref={cloudsRef} scale={1.013} renderOrder={1}>
-          <sphereGeometry args={[scene.radiusScene, 48, 32]} />
-          <meshBasicMaterial map={cloudMap} transparent opacity={0.85} depthWrite={false} />
+      {/* Tilted body frame: the rotation axis, clouds, rings, and moon
+          orbits all share the body's equatorial plane. */}
+      <group rotation-z={tiltRad}>
+        <mesh
+          ref={meshRef}
+          onClick={(e) => {
+            e.stopPropagation();
+            useUiStore.getState().select(spec.id);
+          }}
+          onPointerOver={(e) => {
+            e.stopPropagation();
+            document.body.style.cursor = 'pointer';
+          }}
+          onPointerOut={() => {
+            document.body.style.cursor = 'auto';
+          }}
+        >
+          <sphereGeometry args={[scene.radiusScene, 64, 48]} />
+          <meshStandardMaterial
+            map={texture}
+            roughness={1}
+            metalness={0}
+            emissive={spec.id === 'earth' ? '#ffffff' : '#000000'}
+            emissiveMap={spec.id === 'earth' ? nightTexture : null}
+            emissiveIntensity={spec.id === 'earth' ? 0.85 : 0}
+          />
         </mesh>
-      )}
 
-      {atmosphere && <Atmosphere radius={scene.radiusScene} {...atmosphere} />}
+        {spec.id === 'earth' && (
+          <mesh ref={cloudsRef} scale={1.013} renderOrder={1}>
+            <sphereGeometry args={[scene.radiusScene, 48, 32]} />
+            <meshBasicMaterial map={cloudMap} transparent opacity={0.85} depthWrite={false} />
+          </mesh>
+        )}
 
-      {ringGeo && (
-        <group rotation-z={spec.axialTiltDeg * (Math.PI / 180)}>
+        {atmosphere && <Atmosphere radius={scene.radiusScene} {...atmosphere} />}
+
+        {ringGeo && (
           <mesh geometry={ringGeo} rotation-x={-Math.PI / 2}>
             <meshBasicMaterial
               map={ringMap}
@@ -195,19 +199,28 @@ export const Planet = memo(function Planet({ spec }: { spec: BodySpec }) {
               depthWrite={false}
             />
           </mesh>
-        </group>
-      )}
+        )}
 
-      {scene.moons.map((m) => (
-        <Moon key={m.name} moon={m} />
-      ))}
+        {/* Ring shadow: dark equatorial band on the disk (latitudes ±14°),
+            slightly outside the surface, following the ring plane. */}
+        {ringGeo && (
+          <mesh renderOrder={3} scale={1.002}>
+            <sphereGeometry args={[scene.radiusScene, 96, 12, 0, TAU, Math.PI / 2 - 0.245, 0.49]} />
+            <meshBasicMaterial color="#000000" transparent opacity={0.32} depthWrite={false} />
+          </mesh>
+        )}
 
-      {isSelected && (
-        <mesh rotation-x={-Math.PI / 2} position-y={0.02}>
-          <ringGeometry args={[scene.radiusScene * 1.35, scene.radiusScene * 1.42, 64]} />
-          <meshBasicMaterial color="#38bdf8" transparent opacity={0.9} depthWrite={false} />
-        </mesh>
-      )}
+        {scene.moons.map((m) => (
+          <Moon key={m.name} moon={m} />
+        ))}
+
+        {isSelected && (
+          <mesh rotation-x={-Math.PI / 2} position-y={0.02}>
+            <ringGeometry args={[scene.radiusScene * 1.35, scene.radiusScene * 1.42, 64]} />
+            <meshBasicMaterial color="#38bdf8" transparent opacity={0.9} depthWrite={false} />
+          </mesh>
+        )}
+      </group>
 
       <Html center zIndexRange={[40, 0]} className="pointer-events-none">
         <div
