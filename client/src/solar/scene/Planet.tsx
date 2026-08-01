@@ -10,8 +10,19 @@ import { useTimeStore } from '../simulation/timeStore.ts';
 import { useUiStore } from '../simulation/uiStore.ts';
 import { proceduralTexture } from '../textures/procedural.ts';
 import { useNasaTexture } from '../textures/nasa.ts';
+import { Atmosphere } from './effects/Atmosphere.tsx';
 
 const TAU = Math.PI * 2;
+
+/** Fresnel rim glow per body — Earth bright, Venus soft, Mars a dusty haze. */
+const ATMOSPHERES: Record<
+  string,
+  { color: string; intensity: number; power: number; scale: number }
+> = {
+  earth: { color: '#4d9fff', intensity: 1.35, power: 3.2, scale: 1.05 },
+  venus: { color: '#ffd9a8', intensity: 0.7, power: 3.2, scale: 1.06 },
+  mars: { color: '#d98a5f', intensity: 0.45, power: 2.6, scale: 1.04 },
+};
 
 /** Ring annulus with radial UVs (u = normalized radius, v = 0.5) so band
  * profiles map correctly from a strip texture. */
@@ -75,6 +86,7 @@ export const Planet = memo(function Planet({ spec }: { spec: BodySpec }) {
   const scene = sceneBody(spec);
   const groupRef = useRef<THREE.Group>(null);
   const meshRef = useRef<THREE.Mesh>(null);
+  const cloudsRef = useRef<THREE.Mesh>(null);
   const labelRef = useRef<HTMLDivElement>(null);
   const selectedId = useUiStore((s) => s.selectedId);
   const textureMode = useUiStore((s) => s.textureMode);
@@ -82,7 +94,11 @@ export const Planet = memo(function Planet({ spec }: { spec: BodySpec }) {
   const texture = nasaTexture ?? proceduralTexture(spec.id);
   const ringTexture = useNasaTexture('saturn_ring', textureMode === 'nasa');
   const ringMap = ringTexture ?? proceduralTexture('saturn_ring');
+  const cloudTexture = useNasaTexture('earth_clouds', textureMode === 'nasa');
+  const cloudMap = cloudTexture ?? proceduralTexture('earth_clouds');
+  const nightTexture = useNasaTexture('earth_night', textureMode === 'nasa');
   const isSelected = selectedId === spec.id;
+  const atmosphere = ATMOSPHERES[spec.id];
 
   const ringGeo = useMemo(() => {
     if (!spec.ring || scene.ringInnerScene === undefined || scene.ringOuterScene === undefined) {
@@ -99,6 +115,9 @@ export const Planet = memo(function Planet({ spec }: { spec: BodySpec }) {
       group.position.set(pos.x * AU_UNIT, pos.y * AU_UNIT, pos.z * AU_UNIT);
       if (meshRef.current) {
         meshRef.current.rotation.y = (days * 24 * TAU) / spec.rotationPeriodHours;
+      }
+      if (cloudsRef.current) {
+        cloudsRef.current.rotation.y = ((days * 24 * TAU) / spec.rotationPeriodHours) * 1.03;
       }
       const label = labelRef.current;
       if (label) {
@@ -142,8 +161,30 @@ export const Planet = memo(function Planet({ spec }: { spec: BodySpec }) {
         }}
       >
         <sphereGeometry args={[scene.radiusScene, 64, 48]} />
-        <meshStandardMaterial map={texture} roughness={1} metalness={0} />
+        <meshStandardMaterial
+          map={texture}
+          roughness={1}
+          metalness={0}
+          emissive={spec.id === 'earth' ? '#ffffff' : '#000000'}
+          emissiveMap={spec.id === 'earth' ? nightTexture : null}
+          emissiveIntensity={spec.id === 'earth' ? 0.85 : 0}
+        />
       </mesh>
+
+      {spec.id === 'earth' && (
+        <mesh ref={cloudsRef} scale={1.013} renderOrder={1}>
+          <sphereGeometry args={[scene.radiusScene, 48, 32]} />
+          <meshBasicMaterial
+            map={cloudMap}
+            transparent
+            opacity={0.8}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
+      )}
+
+      {atmosphere && <Atmosphere radius={scene.radiusScene} {...atmosphere} />}
 
       {ringGeo && (
         <group rotation-z={spec.axialTiltDeg * (Math.PI / 180)}>

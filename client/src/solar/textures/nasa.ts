@@ -12,6 +12,8 @@ import uranus from '../../assets/textures/2k_uranus.jpg';
 import neptune from '../../assets/textures/2k_neptune.jpg';
 import moon from '../../assets/textures/2k_moon.jpg';
 import saturnRing from '../../assets/textures/saturn_ring_alpha.png';
+import earthClouds from '../../assets/textures/2k_earth_clouds.jpg';
+import earthNight from '../../assets/textures/2k_earth_nightmap.jpg';
 
 /**
  * Vendored texture maps — served same-origin, no CORS. Planet spheres: Solar
@@ -32,6 +34,8 @@ const TEXTURE_URLS: Record<string, string> = {
   neptune,
   moon,
   saturn_ring: saturnRing,
+  earth_clouds: earthClouds,
+  earth_night: earthNight,
 };
 
 export async function fetchNasaTexture(id: string): Promise<THREE.Texture> {

@@ -1,6 +1,6 @@
-import { AdaptiveDpr, PerformanceMonitor, Stars } from '@react-three/drei';
+import { AdaptiveDpr, PerformanceMonitor } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
-import { Bloom, EffectComposer } from '@react-three/postprocessing';
+import { Bloom, EffectComposer, Noise, Vignette } from '@react-three/postprocessing';
 import { useEffect } from 'react';
 import { DWARF_PLANETS, PLANETS } from '../bodies/jpl.ts';
 import { setMaxAnisotropy } from '../textures/anisotropy.ts';
@@ -9,7 +9,10 @@ import { AsteroidBelt } from './AsteroidBelt.tsx';
 import { CameraRig } from './CameraRig.tsx';
 import { OrbitLine } from './OrbitLine.tsx';
 import { Planet } from './Planet.tsx';
+import { Saturation } from './effects/Saturation.tsx';
 import { Sun } from './Sun.tsx';
+import { MilkyWay } from './sky/MilkyWay.tsx';
+import { Starfield } from './sky/Starfield.tsx';
 
 /** Pull the renderer's real max anisotropy into the shared texture config. */
 function MaxAnisotropy() {
@@ -17,6 +20,22 @@ function MaxAnisotropy() {
   useEffect(() => {
     setMaxAnisotropy(gl.capabilities.getMaxAnisotropy());
   }, [gl]);
+  return null;
+}
+
+/**
+ * Dev-only: exposes the live scene graph for browser QA (playwright evaluate).
+ * `import.meta.env.DEV` is statically false in production builds — dropped.
+ */
+function DebugExpose() {
+  const scene = useThree((s) => s.scene);
+  const gl = useThree((s) => s.gl);
+  const camera = useThree((s) => s.camera);
+  useEffect(() => {
+    if (import.meta.env.DEV && window.location.search.includes('debug')) {
+      (window as unknown as Record<string, unknown>).__solar = { scene, gl, camera };
+    }
+  }, [scene, gl, camera]);
   return null;
 }
 
@@ -28,9 +47,12 @@ export function SolarSystemScene() {
   return (
     <>
       <MaxAnisotropy />
+      <DebugExpose />
       <ambientLight intensity={0.12} />
       <pointLight position={[0, 0, 0]} intensity={3} decay={0} />
-      <Stars radius={150} depth={40} count={4000} factor={3} saturation={0} fade speed={0.4} />
+
+      <Starfield />
+      <MilkyWay />
 
       <CameraRig />
       <Sun />
@@ -52,7 +74,10 @@ export function SolarSystemScene() {
         <AdaptiveDpr pixelated />
       </PerformanceMonitor>
       <EffectComposer>
-        <Bloom mipmapBlur intensity={1.1} luminanceThreshold={1} luminanceSmoothing={0.2} />
+        <Bloom mipmapBlur intensity={1.4} luminanceThreshold={0.85} luminanceSmoothing={0.2} />
+        <Saturation amount={1.15} />
+        <Noise premultiply opacity={0.055} />
+        <Vignette darkness={0.62} offset={0.28} />
       </EffectComposer>
     </>
   );

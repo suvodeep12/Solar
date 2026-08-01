@@ -270,6 +270,30 @@ export function ringTexture(seed: number): THREE.CanvasTexture {
   return canvasTexture(canvas);
 }
 
+/** Cloud cover: white fBm wisps on black — consumed additively over the surface. */
+function cloudsTexture(seed: number): THREE.CanvasTexture {
+  const width = 1024;
+  const height = 512;
+  const [canvas, ctx] = makeCanvas(width, height);
+  const noise = valueNoise(seed ^ 0xabcd, 24);
+  const image = ctx.createImageData(width, height);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const n = fbm(noise, x / 50, y / 50, 5);
+      const streak = 0.12 * Math.sin((y / height) * Math.PI * 14 + n * 2.2);
+      const v = (n + streak - 0.55) / 0.4;
+      const c = Math.min(1, Math.max(0, v));
+      const idx = (y * width + x) * 4;
+      image.data[idx] = Math.floor(c * 255);
+      image.data[idx + 1] = Math.floor(c * 255);
+      image.data[idx + 2] = Math.floor(c * 255);
+      image.data[idx + 3] = 255;
+    }
+  }
+  ctx.putImageData(image, 0, 0);
+  return canvasTexture(canvas);
+}
+
 const cache = new Map<string, THREE.CanvasTexture>();
 
 /** Deterministic procedural texture per body id, cached for the app lifetime. */
@@ -314,6 +338,9 @@ export function proceduralTexture(id: string): THREE.CanvasTexture {
       break;
     case 'saturn_ring':
       texture = ringTexture(seed);
+      break;
+    case 'earth_clouds':
+      texture = cloudsTexture(seed);
       break;
     default:
       texture = icyTexture(seed);

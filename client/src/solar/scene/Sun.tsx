@@ -8,17 +8,19 @@ import { proceduralTexture } from '../textures/procedural.ts';
 import { useNasaTexture } from '../textures/nasa.ts';
 import { useTimeStore } from '../simulation/timeStore.ts';
 import { useUiStore } from '../simulation/uiStore.ts';
+import { Atmosphere } from './effects/Atmosphere.tsx';
 
 const TAU = Math.PI * 2;
 
 export function Sun() {
   const meshRef = useRef<THREE.Mesh>(null);
+  const materialRef = useRef<THREE.MeshStandardMaterial>(null);
   const labelRef = useRef<HTMLDivElement>(null);
   const textureMode = useUiStore((s) => s.textureMode);
   const nasaTexture = useNasaTexture('sun', textureMode === 'nasa');
   const texture = nasaTexture ?? proceduralTexture('sun');
 
-  useFrame(({ camera }) => {
+  useFrame(({ camera, clock }) => {
     const days = useTimeStore.getState().days;
     const spin = meshRef.current?.rotation;
     if (spin) {
@@ -28,6 +30,12 @@ export function Sun() {
     if (label) {
       const d = camera.position.length();
       label.style.opacity = String(Math.min(1, Math.max(0, (48 - d) / 36)));
+    }
+    const material = materialRef.current;
+    if (material) {
+      const t = clock.elapsedTime;
+      const pulse = 1 + 0.05 * Math.sin(t * 2.3) * Math.sin(t * 0.8 + 0.7);
+      material.emissiveIntensity = (textureMode === 'nasa' ? 1.5 : 2.2) * pulse;
     }
   });
 
@@ -65,13 +73,22 @@ export function Sun() {
       >
         <sphereGeometry args={[sunRadiusScene(), 64, 48]} />
         <meshStandardMaterial
+          ref={materialRef}
           map={texture}
           color="#000000"
           emissive="#ff9d2e"
           emissiveMap={texture}
-          emissiveIntensity={textureMode === 'nasa' ? 1.15 : 2.2}
+          emissiveIntensity={textureMode === 'nasa' ? 1.5 : 2.2}
         />
       </mesh>
+      <Atmosphere
+        radius={sunRadiusScene()}
+        color="#ffb84d"
+        intensity={0.5}
+        power={4.5}
+        scale={1.6}
+        pulse
+      />
       <Html center zIndexRange={[40, 0]} className="pointer-events-none">
         <div
           ref={labelRef}
