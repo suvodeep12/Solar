@@ -270,6 +270,29 @@ export function ringTexture(seed: number): THREE.CanvasTexture {
   return canvasTexture(canvas);
 }
 
+/** Uranus: a handful of narrow, faint icy bands on a near-empty ring plane. */
+function uranusRingTexture(seed: number): THREE.CanvasTexture {
+  const width = 1024;
+  const height = 16;
+  const [canvas, ctx] = makeCanvas(width, height);
+  const rand = mulberry32(seed ^ 0x51a7);
+  const image = ctx.createImageData(width, height);
+  const bands = [0.28, 0.3, 0.33, 0.48, 0.57, 0.7, 0.73, 0.79, 0.93, 0.99];
+  for (let p = 0; p < image.data.length; p += 4) {
+    const x = (p / 4) % width;
+    const t = x / width;
+    const v = 165 + rand() * 40;
+    const band = bands.find((b) => Math.abs(t - b) < 0.011);
+    const alpha = band ? 0.35 + rand() * 0.4 + (band > 0.95 ? 0.2 : 0) : 0;
+    image.data[p] = v;
+    image.data[p + 1] = v * 1.02;
+    image.data[p + 2] = Math.min(255, v * 1.14);
+    image.data[p + 3] = Math.floor(alpha * 255);
+  }
+  ctx.putImageData(image, 0, 0);
+  return canvasTexture(canvas);
+}
+
 /** Cloud cover: white fBm wisps on black — consumed additively over the surface. */
 function cloudsTexture(seed: number): THREE.CanvasTexture {
   const width = 1024;
@@ -338,6 +361,9 @@ export function proceduralTexture(id: string): THREE.CanvasTexture {
       break;
     case 'saturn_ring':
       texture = ringTexture(seed);
+      break;
+    case 'uranus_ring':
+      texture = uranusRingTexture(seed);
       break;
     case 'earth_clouds':
       texture = cloudsTexture(seed);

@@ -92,6 +92,22 @@ describe('bodyPositionAt', () => {
     expect(r).toBeGreaterThan(0.5);
     expect(r).toBeLessThan(1.5);
   });
+
+  it('applies the epochDays mean-anomaly phase offset', () => {
+    const phased = { ...EARTH, eccentricity: 0, epochDays: EARTH.periodDays / 4 };
+    const p = bodyPositionAt(phased, 0);
+    expect(p.x).toBeCloseTo(0, 6);
+    expect(p.z).toBeCloseTo(1, 6);
+    expect(Math.hypot(p.x, p.y, p.z)).toBeCloseTo(1, 6);
+  });
+
+  it('keeps a phased orbit period-synchronized', () => {
+    const phased = { ...EARTH, epochDays: EARTH.periodDays / 4 };
+    const p0 = bodyPositionAt(phased, 0);
+    const p1 = bodyPositionAt(phased, phased.periodDays);
+    expect(p0.x).toBeCloseTo(p1.x, 6);
+    expect(p0.z).toBeCloseTo(p1.z, 6);
+  });
 });
 
 describe('moonPositionAt', () => {

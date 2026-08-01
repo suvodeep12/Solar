@@ -7,9 +7,12 @@ import { setMaxAnisotropy } from '../textures/anisotropy.ts';
 import { useTimeStore } from '../simulation/timeStore.ts';
 import { AsteroidBelt } from './AsteroidBelt.tsx';
 import { CameraRig } from './CameraRig.tsx';
+import { Comet } from './Comet.tsx';
+import { KuiperBelt } from './KuiperBelt.tsx';
 import { OrbitLine } from './OrbitLine.tsx';
 import { Planet } from './Planet.tsx';
 import { Saturation } from './effects/Saturation.tsx';
+import { ScatteredDisc } from './ScatteredDisc.tsx';
 import { Sun } from './Sun.tsx';
 import { MilkyWay } from './sky/MilkyWay.tsx';
 import { Starfield } from './sky/Starfield.tsx';
@@ -69,6 +72,9 @@ export function SolarSystemScene() {
         </group>
       ))}
       <AsteroidBelt />
+      <KuiperBelt />
+      <ScatteredDisc />
+      <Comet />
 
       <PerformanceMonitor>
         <AdaptiveDpr pixelated />

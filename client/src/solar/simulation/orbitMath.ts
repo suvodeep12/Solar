@@ -77,7 +77,7 @@ export function bodyPositionAt(spec: BodySpec, tDays: number): Vec3 {
     spec.distanceAu,
     spec.eccentricity,
     spec.inclinationDeg,
-    meanAnomalyAt(spec.periodDays, tDays),
+    meanAnomalyAt(spec.periodDays, tDays + (spec.epochDays ?? 0)),
   );
 }
 

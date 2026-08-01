@@ -93,7 +93,11 @@ export const Planet = memo(function Planet({ spec }: { spec: BodySpec }) {
   const nasaTexture = useNasaTexture(spec.id, textureMode === 'nasa');
   const texture = nasaTexture ?? proceduralTexture(spec.id);
   const ringTexture = useNasaTexture('saturn_ring', textureMode === 'nasa');
-  const ringMap = ringTexture ?? proceduralTexture('saturn_ring');
+  const ringMap =
+    spec.ring?.texture === undefined
+      ? (ringTexture ?? proceduralTexture('saturn_ring'))
+      : proceduralTexture(spec.ring.texture);
+  const ringOpacity = spec.ring?.opacity ?? 1;
   const cloudTexture = useNasaTexture('earth_clouds', textureMode === 'nasa');
   const cloudMap = cloudTexture ?? proceduralTexture('earth_clouds');
   const nightTexture = useNasaTexture('earth_night', textureMode === 'nasa');
@@ -192,6 +196,7 @@ export const Planet = memo(function Planet({ spec }: { spec: BodySpec }) {
             <meshBasicMaterial
               map={ringMap}
               transparent
+              opacity={ringOpacity}
               side={THREE.DoubleSide}
               depthWrite={false}
             />

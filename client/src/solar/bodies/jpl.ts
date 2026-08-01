@@ -18,6 +18,10 @@ export interface RingSpec {
   outerKm: number;
   /** Tilt of the ring plane from the body's equator, degrees */
   tiltDeg: number;
+  /** Procedural ring texture id (defaults to 'saturn_ring') */
+  texture?: string;
+  /** Ring opacity (default 1) */
+  opacity?: number;
 }
 
 export interface BodySpec {
@@ -38,6 +42,8 @@ export interface BodySpec {
   axialTiltDeg: number;
   /** Sidereal rotation period, hours (negative = retrograde) */
   rotationPeriodHours: number;
+  /** Mean-anomaly phase offset, days (0 = perihelion at J2000 epoch) */
+  epochDays?: number;
   gravity: string;
   moonsCount: number;
   fact: string;
@@ -197,6 +203,7 @@ export const PLANETS: BodySpec[] = [
     moonsCount: 28,
     fact: 'Rolls around the Sun on its side \u2014 its axis is tilted 98°, so each pole gets 42 years of sunlight.',
     moons: [{ name: 'Titania', radiusKm: 788.4, distancePlanetRadii: 17.2, periodDays: 8.706 }],
+    ring: { innerKm: 38_000, outerKm: 51_200, tiltDeg: 0, texture: 'uranus_ring', opacity: 0.55 },
   },
   {
     id: 'neptune',
