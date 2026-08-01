@@ -89,6 +89,7 @@ function Moon({ parentId, moon }: { parentId: string; moon: SceneMoonSpec }) {
     <group ref={groupRef}>
       <mesh
         ref={meshRef}
+        name={id}
         onClick={(e) => {
           e.stopPropagation();
           useUiStore.getState().select(id);
@@ -152,7 +153,10 @@ export const Planet = memo(function Planet({ spec }: { spec: BodySpec }) {
       ? (ringTexture ?? proceduralTexture('saturn_ring'))
       : proceduralTexture(spec.ring.texture);
   const ringOpacity = spec.ring?.opacity ?? 1;
-  const cloudTexture = useNasaTexture('earth_clouds', textureMode === 'nasa');
+  const cloudTexture = useNasaTexture(
+    'earth_clouds',
+    textureMode === 'nasa' && spec.id === 'earth',
+  );
   const cloudMap = cloudTexture ?? proceduralTexture('earth_clouds');
   const nightTexture = useNasaTexture('earth_night', textureMode === 'nasa' && spec.id === 'earth');
   const isSelected = selectedId === spec.id;

@@ -82,7 +82,6 @@ export function CameraRig() {
   /** Wall-clock seconds until the follow may re-center again after a manual
    *  pan: pans stick for ~3s after release, then gently re-aim at the body. */
   const panPauseUntil = useRef(0);
-  const targetAtGestureStart = useRef(new THREE.Vector3());
 
   useEffect(() => {
     const f = focus.current;
@@ -96,6 +95,11 @@ export function CameraRig() {
     if (!target) return;
     f.pos.copy(target.pos);
     f.targetDist = target.dist;
+    // A new fly is a fresh intent: drop any pending pan pause so the follow
+    // re-aims immediately once the fly lands (else the target stays stale
+    // at the pre-pan position until the pause expires).
+    interacting.current = false;
+    panPauseUntil.current = 0;
     const camera = controlsRef.current?.object;
     if (!camera) return;
     const fromPos = camera.position;
@@ -118,13 +122,15 @@ export function CameraRig() {
     if (target) f.pos.copy(target.pos);
 
     // Moons sweep around their parent fast (days, not years): delta-follow
-    // the moon's displacement so the camera and target stay glued to it
-    // without fighting OrbitControls' wheel/rotate (which own camera.pos).
+    // the moon's displacement so the camera stays glued to it without
+    // fighting OrbitControls' wheel/rotate (which own camera.pos). The
+    // currentTarget must track the same displacement or it lags the moon by
+    // the in-gesture distance (pivot swings on rotate, pan false-positives).
     if (target?.kind === 'moon' && !f.fly && prevMoon.current) {
       const delta = f.pos.clone().sub(prevMoon.current);
       if (delta.lengthSq() > 1e-14) {
         camera.position.add(delta);
-        controls?.target.add(delta);
+        currentTarget.current.add(delta);
       }
     }
     prevMoon.current = target?.kind === 'moon' ? f.pos.clone() : null;
@@ -132,6 +138,13 @@ export function CameraRig() {
     const now = performance.now() / 1000;
     if (!interacting.current && now > panPauseUntil.current) {
       currentTarget.current.lerp(f.pos, 1 - Math.exp(-dt * 3));
+    }
+    // The exponential chase never quite reaches f.pos, and moons outpace the
+    // 3/s lerp entirely (target would lag the body by speed/3, swinging the
+    // view on rotate and false-flagging pans). Once close, snap so the follow
+    // is exact — runs during gestures too so wheel/rotate pivot around the body.
+    if (currentTarget.current.distanceTo(f.pos) < 0.01) {
+      currentTarget.current.copy(f.pos);
     }
     if (controls) {
       if (f.fly) {
@@ -159,12 +172,16 @@ export function CameraRig() {
         focus.current.fly = null;
         interacting.current = true;
         panPauseUntil.current = performance.now() / 1000 + 3;
-        if (controlsRef.current) targetAtGestureStart.current.copy(controlsRef.current.target);
       }}
       onEnd={() => {
         interacting.current = false;
         const controls = controlsRef.current;
-        if (controls && targetAtGestureStart.current.distanceTo(controls.target) > 1e-3) {
+        // A pan drags controls.target away from the followed body; rotate/zoom
+        // keep it near f.pos. A gesture-start-vs-end comparison would
+        // false-positive on moons (the delta-follow moves the target by the
+        // moon's displacement every frame) — distance-to-body is the
+        // pan-specific test.
+        if (controls && controls.target.distanceTo(focus.current.pos) > 0.2) {
           panPauseUntil.current = performance.now() / 1000 + 3;
         }
       }}

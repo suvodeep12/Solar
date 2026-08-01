@@ -34,11 +34,12 @@ function DebugExpose() {
   const scene = useThree((s) => s.scene);
   const gl = useThree((s) => s.gl);
   const camera = useThree((s) => s.camera);
+  const controls = useThree((s) => s.controls);
   useEffect(() => {
     if (import.meta.env.DEV && window.location.search.includes('debug')) {
-      (window as unknown as Record<string, unknown>).__solar = { scene, gl, camera };
+      (window as unknown as Record<string, unknown>).__solar = { scene, gl, camera, controls };
     }
-  }, [scene, gl, camera]);
+  }, [scene, gl, camera, controls]);
   return null;
 }
 

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { getMaxAnisotropy } from './anisotropy.ts';
+import { CLOUD_ALPHA_SCALE } from './nasa.ts';
 
 /** Seeded PRNG (mulberry32) so procedural textures are stable across renders. */
 function mulberry32(seed: number): () => number {
@@ -311,7 +312,7 @@ function cloudsTexture(seed: number): THREE.CanvasTexture {
       image.data[idx] = 255;
       image.data[idx + 1] = 255;
       image.data[idx + 2] = 255;
-      image.data[idx + 3] = Math.floor(c * c * 255);
+      image.data[idx + 3] = Math.floor(c * c * 255 * CLOUD_ALPHA_SCALE);
     }
   }
   ctx.putImageData(image, 0, 0);
