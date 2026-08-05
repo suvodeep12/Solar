@@ -4,7 +4,7 @@ Date: 2026-08-01. Pick up where this leaves off. Full spec: AGENTS.md (canonical
 
 ## State
 
-- `main` at `57f79df` ("feat: moon transit shadows and lunar eclipses (phase b item 1)"), Phase A + Phase B item 1 done; CI green; Pages live at https://suvodeep12.github.io/Solar/ (deploys from main push).
+- `main` at `a5d983b` ("feat: shooting-star meteors (phase b item 2)"), Phase A + Phase B items 1–2 done; lens flare (item 3) implemented + verified live, docs updated, commit pending in the working tree. CI green; Pages live at https://suvodeep12.github.io/Solar/ (deploys from main push).
 - Working tree clean. `bun run verify` green (8 files / 77 tests) at 57f79df.
 - No `server/` dir, no `client/src/api/` — server work explicitly deferred by user ("api later", "Defer DB entirely"). Client-only from here.
 - User wants this client to be "as cool/mindblowing/impressive/10/10 as possible", asked to "use proactively any installed plugins/skills/MCP" — session tools did NOT include anything new (config at `~/.config/opencode/opencode.jsonc` still lists the same 10 plugins + playwright MCP); new installs likely load after an opencode restart. `customize-opencode` skill available if config work is needed.
@@ -27,8 +27,8 @@ Date: 2026-08-01. Pick up where this leaves off. Full spec: AGENTS.md (canonical
    - All geometry in the tilt frame: `sunLocal = tiltedPosition(normalize(-bodyPositionAt(parent)), axialTiltDeg)`; gates `dot > cos(sunAng+moonAng)` (transit) / `dot < -cos(max(0, sunAng-planetAng))` (eclipse); sunAng = `asin(sunRadiusScene()/planetDist)` with `planetDist = |bodyPositionAt| × AU_UNIT` (scene units — consistent).
    - Verified: io transit day 0.885 (dot 0.9985) → spot on Jupiter's day side at the sub-solar limb, scale 0.134 (= `0.039×9.9/2.887` — correct umbra sizing), hides on the far side; Earth lunar eclipses: 42 samples/yr, centered total eclipse at day 88.75, monthly cadence within eclipse seasons (58.75 & 88.75 are 29.5d apart — correct).
    - Note: jupiter's moons never eclipse (planetAng > sunAng → umbraHalf 0 — physically right for the big visual sun); the umbra cone exists only where `moon.sceneDistance > planetRadius/asin...` (earth ✓).
-2. **Meteors**: new `scene/sky/Meteors.tsx` — pool of ~16 additive `THREE.Line` (or thin stretched sprites) with head + fading tail; spawn every ~8–20s (random), streak 1–2s, fade; `depthWrite false`, `frustumCulled false`; animate in `useFrame` from `clock.elapsedTime`. Keep OUT of the starfield shader (separate component, no shader churn). Visible mainly at overview — fine.
-3. **Lens flare**: new `scene/effects/LensFlare.tsx` — classic sprite-ghost chain along sun→screen-center axis; procedural radial-gradient CanvasTextures (seeded like `procedural.ts` mulberry32); `THREE.SpriteMaterial` additive, `depthTest false`, `depthWrite false`; each frame: sun world pos = origin → NDC → if on-screen (|ndc| < 1), place ~6 ghosts along `normalize(center − sunNdc)` scaled by distance, opacity ∝ distance; hide off-screen. KEEP luminance below bloom threshold (0.85) so it doesn't wash out (the "orange wash" trap from earlier phases).
+2. **Meteors** — DONE (a5d983b), verified live: pool of 16 additive `THREE.Line` streaks in `scene/sky/Meteors.tsx`; wall-clock driven (independent of sim speed), spawn INSIDE the camera view cone (`SPAWN_CONE 0.35`, `FORWARD_MIX 0.6`), every 8–20s (first 2–6s), streak 1.6–2.4s. Pool is a MODULE-level `getPool()` singleton (a `useMemo`-held pool trips `react-hooks/immutability` — acquire inside the `useFrame` callback).
+3. **Lens flare** — DONE (working tree), verified live: `scene/effects/LensFlare.tsx` — 8 additive sprites (streak + 6 ghosts + ring) on the sun→screen-center axis at NDC `SUN_NDC×(1−t)` unprojected at anchor depth `z=0.5`. Depth cancels in `angularSize = scale/depth`, so sprites are pixel-exact at any anchor depth; `unproject` mutates its receiver — save NDC copies (`ax/ay` locals) BEFORE unprojecting or size deltas compute in world space (garbage scales). Opacity ramps with `|SUN_NDC|` (hidden at center, full at 0.8, 0 at 1.05 cutoff) — never reaches the 0.85 bloom threshold.
 4. **Perf hygiene**:
    - CameraRig: module-level scratch vectors — `resolveTarget` allocates `new THREE.Vector3` every frame + `f.pos.clone()` in the delta-follow; replace with scratch pools.
    - Tab-hidden: `useThree((s) => s.setFrameloop)` — `document.visibilitychange` → hidden `'never'`, visible `'always'` (in `SolarSystemScene.tsx`; also the `TimeControls` RAF date updater keeps running — same guard or leave, it's cheap).
@@ -82,7 +82,7 @@ Date: 2026-08-01. Pick up where this leaves off. Full spec: AGENTS.md (canonical
 
 ## Next steps (in order)
 
-1. ✅ Phase A (755729e) + Phase B item 1 eclipses (57f79df) — done, committed, verified live.
-2. Phase B: meteors → lens flare → perf hygiene, verify each live, commit per item (or per group).
+1. ✅ Phase A (755729e) + Phase B items 1–2 (57f79df, a5d983b) — done, committed, verified live. Lens flare (item 3) done in working tree — commit + push pending.
+2. Phase B: perf hygiene (CameraRig scratch vectors, tab-hidden frameloop, label DOM culling), verify live, commit.
 3. Phase C: presets + solver + tests → verify → commit.
 4. Final: AGENTS.md bullets for everything confirmed, full gate, push (Pages auto-deploys).

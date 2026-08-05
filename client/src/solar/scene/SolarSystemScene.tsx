@@ -13,6 +13,7 @@ import { KuiperBelt } from './KuiperBelt.tsx';
 import { OrbitLine } from './OrbitLine.tsx';
 import { Planet } from './Planet.tsx';
 import { Saturation } from './effects/Saturation.tsx';
+import { LensFlare } from './effects/LensFlare.tsx';
 import { ScatteredDisc } from './ScatteredDisc.tsx';
 import { Sun } from './Sun.tsx';
 import { MilkyWay } from './sky/MilkyWay.tsx';
@@ -86,6 +87,7 @@ export function SolarSystemScene() {
       <ScatteredDisc />
       <Comet />
       <Meteors />
+      <LensFlare />
 
       <PerformanceMonitor>
         <AdaptiveDpr pixelated />
