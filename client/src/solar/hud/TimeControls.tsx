@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { MOMENTS } from '../simulation/presets.ts';
 import { simDate, useTimeStore } from '../simulation/timeStore.ts';
+import { useUiStore } from '../simulation/uiStore.ts';
 
 const SPEEDS = [0.5, 1, 7, 30, 365] as const;
 
@@ -69,6 +71,25 @@ export function TimeControls() {
         <button className={buttonClass} onClick={reset} title="0">
           RESET
         </button>
+      </div>
+      <div className="font-mono text-xs tracking-widest text-white/60">MOMENTS</div>
+      <div className="flex flex-wrap gap-1">
+        {MOMENTS.map((moment) => (
+          <button
+            key={moment.id}
+            className={buttonClass}
+            onClick={() => {
+              useTimeStore.setState({
+                days: moment.days,
+                speed: moment.speed ?? 1,
+                mode: moment.paused ? 'paused' : 'simulated',
+              });
+              useUiStore.getState().select(moment.focusId);
+            }}
+          >
+            {moment.label}
+          </button>
+        ))}
       </div>
     </div>
   );
