@@ -16,6 +16,7 @@ import { Saturation } from './effects/Saturation.tsx';
 import { ScatteredDisc } from './ScatteredDisc.tsx';
 import { Sun } from './Sun.tsx';
 import { MilkyWay } from './sky/MilkyWay.tsx';
+import { Meteors } from './sky/Meteors.tsx';
 import { Starfield } from './sky/Starfield.tsx';
 
 /** Pull the renderer's real max anisotropy into the shared texture config. */
@@ -84,6 +85,7 @@ export function SolarSystemScene() {
       <KuiperBelt />
       <ScatteredDisc />
       <Comet />
+      <Meteors />
 
       <PerformanceMonitor>
         <AdaptiveDpr pixelated />
