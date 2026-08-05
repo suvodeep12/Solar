@@ -4,8 +4,8 @@ Date: 2026-08-01. Pick up where this leaves off. Full spec: AGENTS.md (canonical
 
 ## State
 
-- `main` at `a5d983b` ("feat: shooting-star meteors (phase b item 2)"), Phase A + Phase B items 1–2 done; lens flare (item 3) implemented + verified live, docs updated, commit pending in the working tree. CI green; Pages live at https://suvodeep12.github.io/Solar/ (deploys from main push).
-- Working tree clean. `bun run verify` green (8 files / 77 tests) at 57f79df.
+- `main` at `f68976f` ("feat: quick-jump moments presets (phase c)"). Phases A–C complete: 755729e, 57f79df, a5d983b, d748c3d, 81d7b28, f68976f — all committed, pushed, verified live. CI green; Pages live at https://suvodeep12.github.io/Solar/ (deploys from main push).
+- Working tree clean. `bun run verify` green (9 files / 86 tests) at f68976f.
 - No `server/` dir, no `client/src/api/` — server work explicitly deferred by user ("api later", "Defer DB entirely"). Client-only from here.
 - User wants this client to be "as cool/mindblowing/impressive/10/10 as possible", asked to "use proactively any installed plugins/skills/MCP" — session tools did NOT include anything new (config at `~/.config/opencode/opencode.jsonc` still lists the same 10 plugins + playwright MCP); new installs likely load after an opencode restart. `customize-opencode` skill available if config work is needed.
 
@@ -28,13 +28,14 @@ Date: 2026-08-01. Pick up where this leaves off. Full spec: AGENTS.md (canonical
    - Verified: io transit day 0.885 (dot 0.9985) → spot on Jupiter's day side at the sub-solar limb, scale 0.134 (= `0.039×9.9/2.887` — correct umbra sizing), hides on the far side; Earth lunar eclipses: 42 samples/yr, centered total eclipse at day 88.75, monthly cadence within eclipse seasons (58.75 & 88.75 are 29.5d apart — correct).
    - Note: jupiter's moons never eclipse (planetAng > sunAng → umbraHalf 0 — physically right for the big visual sun); the umbra cone exists only where `moon.sceneDistance > planetRadius/asin...` (earth ✓).
 2. **Meteors** — DONE (a5d983b), verified live: pool of 16 additive `THREE.Line` streaks in `scene/sky/Meteors.tsx`; wall-clock driven (independent of sim speed), spawn INSIDE the camera view cone (`SPAWN_CONE 0.35`, `FORWARD_MIX 0.6`), every 8–20s (first 2–6s), streak 1.6–2.4s. Pool is a MODULE-level `getPool()` singleton (a `useMemo`-held pool trips `react-hooks/immutability` — acquire inside the `useFrame` callback).
-3. **Lens flare** — DONE (working tree), verified live: `scene/effects/LensFlare.tsx` — 8 additive sprites (streak + 6 ghosts + ring) on the sun→screen-center axis at NDC `SUN_NDC×(1−t)` unprojected at anchor depth `z=0.5`. Depth cancels in `angularSize = scale/depth`, so sprites are pixel-exact at any anchor depth; `unproject` mutates its receiver — save NDC copies (`ax/ay` locals) BEFORE unprojecting or size deltas compute in world space (garbage scales). Opacity ramps with `|SUN_NDC|` (hidden at center, full at 0.8, 0 at 1.05 cutoff) — never reaches the 0.85 bloom threshold.
-4. **Perf hygiene** — DONE (working tree): `usePauseWhenHidden()` in `SolarSystemScene.tsx` (frameloop `'never'` while tab hidden — sim days freeze, verified live 1185.53 → frozen → resumes at 365 d/s); label DOM culling at all three label sites (`display:none` when computed opacity ≈ 0 — Titan/Neptune/Pluto culled at overview, `offsetWidth 0`); CameraRig scratch vectors were already in place (fe1ebd8).
+3. **Lens flare** — DONE (d748c3d), verified live: `scene/effects/LensFlare.tsx` — 8 additive sprites (streak + 6 ghosts + ring) on the sun→screen-center axis at NDC `SUN_NDC×(1−t)` unprojected at anchor depth `z=0.5`. Depth cancels in `angularSize = scale/depth`, so sprites are pixel-exact at any anchor depth; `unproject` mutates its receiver — save NDC copies (`ax/ay` locals) BEFORE unprojecting or size deltas compute in world space (garbage scales). Opacity ramps with `|SUN_NDC|` (hidden at center, full at 0.8, 0 at 1.05 cutoff) — never reaches the 0.85 bloom threshold.
+4. **Perf hygiene** — DONE (81d7b28), verified live: `usePauseWhenHidden()` in `SolarSystemScene.tsx` (frameloop `'never'` while tab hidden — sim days freeze, verified live 1185.53 → frozen → resumes at 365 d/s); label DOM culling at all three label sites (`display:none` when computed opacity ≈ 0 — Titan/Neptune/Pluto culled at overview, `offsetWidth 0`); CameraRig scratch vectors were already in place (fe1ebd8).
 
-### Phase C — quick-jump presets
-- New `simulation/presets.ts`: `interface Moment { id, label, days, speed?, focusId }` + pure `findTransitDay(parentId, moonName, t0, t1, stepDays)` solver in `simulation/transits.ts` — scans `moonPositionAt`/`bodyPositionAt` for max `dot(moonLocal, sunLocal)` alignment; unit-test the solver + preset sanity (Halley: `days = −HALLEY.epochDays = −5074.39`).
-- Presets: Halley perihelion (−5074.39, focus overview/sun), Earth June solstice (+182, focus earth), Uranus pole-on (0, focus uranus), Io transit on Jupiter (solved), Earth lunar eclipse (solved).
-- UI: "MOMENTS" row under `TimeControls.tsx` (same `buttonClass`); action: `useTimeStore.setState({ days, speed: preset.speed ?? 1, mode: 'simulated' })` + `useUiStore.getState().select(focusId)`.
+### Phase C — quick-jump presets — DONE (f68976f), verified live
+- `simulation/presets.ts` (`interface Moment { id, label, days, speed?, paused?, focusId }`, `MOMENTS` array) + `simulation/transits.ts` (`findAlignmentDay(parentId, moonName, t0, t1, stepDays, 'transit'|'eclipse')` — coarse scan + golden-section refine to ~1e-4 d; `findTransitDay` convenience). Solver uses `moonById(moonId(parentId, moonName))`, `sceneBody(parent)`, `sceneMoonSpec`, `bodyPositionAt`/`moonPositionAt`/`tiltedPosition`.
+- Presets: Halley perihelion (`days = −HALLEY.epochDays = −5074.39`, focus sun), June solstice (182, earth), Uranus pole-on (0, uranus), Io transit (solved, speed 0.05, paused, focus jupiter), lunar eclipse (solved, speed 0.05, paused, focus earth).
+- UI: "MOMENTS" row in `TimeControls.tsx`; action: `useTimeStore.setState({ days, speed, mode: paused ? 'paused' : 'simulated' })` + `select(focusId)`.
+- Verified live: Io preset → paused at day 11.5037, spot on Jupiter's day side; eclipse preset → paused at −88.7478, `earth_moon` material linear color (0.2,0.2,0.2); Halley/solstice drift-consistent. **Probe gotcha (important): `material.color.getHexString()` returns the sRGB-ENCODED hex — linear 0.2 reads "#7c7c7c" (= 124 = sRGB(0.2)), NOT #333. Read raw `.color.r/g/b` (linear 0–1) instead — the "frozen #7c7c7c" was a decoding artifact, not a bug. Also: a tight `setState`→read loop without a wait reads STALE frames (useFrame runs on rAF) — `await` ~100ms after `setState` before probing.**
 
 ## Verification recipes (Playwright MCP, `http://localhost:5173/?debug`, resize 1600×900, dev server runs `bun run dev` in `client/`)
 
@@ -79,7 +80,6 @@ Date: 2026-08-01. Pick up where this leaves off. Full spec: AGENTS.md (canonical
 
 ## Next steps (in order)
 
-1. ✅ Phase A (755729e) + Phase B items 1–3 (57f79df, a5d983b, d748c3d) — done, committed, pushed, verified live.
-2. ✅ Phase B item 4 perf hygiene (tab-hidden frameloop + label culling) — done, verified live; commit + push pending.
-3. Phase C: presets + solver + tests → verify → commit.
-4. Final: AGENTS.md bullets for everything confirmed, full gate, push (Pages auto-deploys).
+1. ✅ Phase A (755729e) + Phase B items 1–4 (57f79df, a5d983b, d748c3d, 81d7b28) — done, committed, pushed, verified live.
+2. ✅ Phase C presets + solver + tests (f68976f) — done, committed, pushed, verified live (transit + eclipse both land exact, eclipse darkening confirmed).
+3. All AGENTS.md bullets recorded; full gate green (86 tests). Wow package complete — open a new plan if more is wanted.
