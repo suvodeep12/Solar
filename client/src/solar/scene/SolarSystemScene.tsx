@@ -29,6 +29,18 @@ function MaxAnisotropy() {
   return null;
 }
 
+/** Stop rendering while the tab is hidden — R3F keeps the RAF loop and the
+ *  sim ticking (and GPU fan spinning) otherwise. `never`/`always` restore
+ *  cleanly on visibility change; the effect re-registers per visibility. */
+function usePauseWhenHidden() {
+  const setFrameloop = useThree((s) => s.setFrameloop);
+  useEffect(() => {
+    const onVisibility = () => setFrameloop(document.hidden ? 'never' : 'always');
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [setFrameloop]);
+}
+
 /**
  * Dev-only: exposes the live scene graph for browser QA (playwright evaluate).
  * `import.meta.env.DEV` is statically false in production builds — dropped.
@@ -54,6 +66,7 @@ function DebugExpose() {
 }
 
 export function SolarSystemScene() {
+  usePauseWhenHidden();
   useFrame((_, dt) => {
     useTimeStore.getState().tick(dt);
   });

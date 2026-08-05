@@ -147,7 +147,9 @@ function Moon({
     if (label) {
       groupRef.current?.getWorldPosition(WORLD_POS);
       const d = camera.position.distanceTo(WORLD_POS);
-      label.style.opacity = String(Math.min(1, Math.max(0, (48 - d) / 36)));
+      const opacity = Math.min(1, Math.max(0, (48 - d) / 36));
+      label.style.display = opacity > 0 ? '' : 'none';
+      label.style.opacity = String(opacity);
     }
   });
 
@@ -265,7 +267,9 @@ export const Planet = memo(function Planet({ spec }: { spec: BodySpec }) {
       const label = labelRef.current;
       if (label) {
         const d = camera.position.distanceTo(group.position);
-        label.style.opacity = String(Math.min(1, Math.max(0, (48 - d) / 36)));
+        const opacity = Math.min(1, Math.max(0, (48 - d) / 36));
+        label.style.display = opacity > 0 ? '' : 'none';
+        label.style.opacity = String(opacity);
       }
     }
   });

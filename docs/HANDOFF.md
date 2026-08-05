@@ -29,10 +29,7 @@ Date: 2026-08-01. Pick up where this leaves off. Full spec: AGENTS.md (canonical
    - Note: jupiter's moons never eclipse (planetAng > sunAng → umbraHalf 0 — physically right for the big visual sun); the umbra cone exists only where `moon.sceneDistance > planetRadius/asin...` (earth ✓).
 2. **Meteors** — DONE (a5d983b), verified live: pool of 16 additive `THREE.Line` streaks in `scene/sky/Meteors.tsx`; wall-clock driven (independent of sim speed), spawn INSIDE the camera view cone (`SPAWN_CONE 0.35`, `FORWARD_MIX 0.6`), every 8–20s (first 2–6s), streak 1.6–2.4s. Pool is a MODULE-level `getPool()` singleton (a `useMemo`-held pool trips `react-hooks/immutability` — acquire inside the `useFrame` callback).
 3. **Lens flare** — DONE (working tree), verified live: `scene/effects/LensFlare.tsx` — 8 additive sprites (streak + 6 ghosts + ring) on the sun→screen-center axis at NDC `SUN_NDC×(1−t)` unprojected at anchor depth `z=0.5`. Depth cancels in `angularSize = scale/depth`, so sprites are pixel-exact at any anchor depth; `unproject` mutates its receiver — save NDC copies (`ax/ay` locals) BEFORE unprojecting or size deltas compute in world space (garbage scales). Opacity ramps with `|SUN_NDC|` (hidden at center, full at 0.8, 0 at 1.05 cutoff) — never reaches the 0.85 bloom threshold.
-4. **Perf hygiene**:
-   - CameraRig: module-level scratch vectors — `resolveTarget` allocates `new THREE.Vector3` every frame + `f.pos.clone()` in the delta-follow; replace with scratch pools.
-   - Tab-hidden: `useThree((s) => s.setFrameloop)` — `document.visibilitychange` → hidden `'never'`, visible `'always'` (in `SolarSystemScene.tsx`; also the `TimeControls` RAF date updater keeps running — same guard or leave, it's cheap).
-   - Label culling: `label.style.opacity` already set per frame (Planet.tsx:185-189, Sun, Moon); when computed opacity ≈ 0 add `display: none` to kill off-screen label DOM (25 labels at overview clutter).
+4. **Perf hygiene** — DONE (working tree): `usePauseWhenHidden()` in `SolarSystemScene.tsx` (frameloop `'never'` while tab hidden — sim days freeze, verified live 1185.53 → frozen → resumes at 365 d/s); label DOM culling at all three label sites (`display:none` when computed opacity ≈ 0 — Titan/Neptune/Pluto culled at overview, `offsetWidth 0`); CameraRig scratch vectors were already in place (fe1ebd8).
 
 ### Phase C — quick-jump presets
 - New `simulation/presets.ts`: `interface Moment { id, label, days, speed?, focusId }` + pure `findTransitDay(parentId, moonName, t0, t1, stepDays)` solver in `simulation/transits.ts` — scans `moonPositionAt`/`bodyPositionAt` for max `dot(moonLocal, sunLocal)` alignment; unit-test the solver + preset sanity (Halley: `days = −HALLEY.epochDays = −5074.39`).
@@ -82,7 +79,7 @@ Date: 2026-08-01. Pick up where this leaves off. Full spec: AGENTS.md (canonical
 
 ## Next steps (in order)
 
-1. ✅ Phase A (755729e) + Phase B items 1–2 (57f79df, a5d983b) — done, committed, verified live. Lens flare (item 3) done in working tree — commit + push pending.
-2. Phase B: perf hygiene (CameraRig scratch vectors, tab-hidden frameloop, label DOM culling), verify live, commit.
+1. ✅ Phase A (755729e) + Phase B items 1–3 (57f79df, a5d983b, d748c3d) — done, committed, pushed, verified live.
+2. ✅ Phase B item 4 perf hygiene (tab-hidden frameloop + label culling) — done, verified live; commit + push pending.
 3. Phase C: presets + solver + tests → verify → commit.
 4. Final: AGENTS.md bullets for everything confirmed, full gate, push (Pages auto-deploys).

@@ -29,7 +29,11 @@ export function Sun() {
     const label = labelRef.current;
     if (label) {
       const d = camera.position.length();
-      label.style.opacity = String(Math.min(1, Math.max(0, (48 - d) / 36)));
+      const opacity = Math.min(1, Math.max(0, (48 - d) / 36));
+      // Cull invisible labels from the DOM — 25 off-screen labels at overview
+      // otherwise keep (re)layout + composite cost even at opacity 0.
+      label.style.display = opacity > 0 ? '' : 'none';
+      label.style.opacity = String(opacity);
     }
     const material = materialRef.current;
     if (material) {
