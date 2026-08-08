@@ -72,6 +72,20 @@ export function TimeControls() {
           RESET
         </button>
       </div>
+      <div className="font-mono text-xs tracking-widest text-white/60">VIEWS</div>
+      <div className="flex flex-wrap gap-1">
+        <button
+          className={buttonClass}
+          onClick={() => {
+            // A view is an absolute pose: drop any selection first so the
+            // follow doesn't re-aim at it as soon as the flight lands.
+            useUiStore.getState().select(null);
+            useUiStore.getState().setView('galactic-band');
+          }}
+        >
+          GALACTIC BAND
+        </button>
+      </div>
       <div className="font-mono text-xs tracking-widest text-white/60">MOMENTS</div>
       <div className="flex flex-wrap gap-1">
         {MOMENTS.map((moment) => (

@@ -8,7 +8,8 @@ import { sceneBody, sceneMoonSpec, sunRadiusScene } from '../bodies/display.ts';
 import { AU_UNIT, bodyPositionAt, moonPositionAt } from '../simulation/orbitMath.ts';
 import { tiltedPosition } from '../simulation/axialTilt.ts';
 import { useTimeStore } from '../simulation/timeStore.ts';
-import { useUiStore } from '../simulation/uiStore.ts';
+import { useUiStore, type ViewId } from '../simulation/uiStore.ts';
+import { GALACTIC_CENTER_DIR, GALACTIC_NORMAL } from './sky/galactic.ts';
 
 const OVERVIEW_DIST = Math.sqrt(18 * 18 + 36 * 36);
 const FLY_DURATION = 1.3;
@@ -21,12 +22,29 @@ const PAN_EPSILON = 1e-4;
 /** How fast a stuck pan offset relaxes back to zero (1/s lerp rate). */
 const PAN_RELAX_RATE = 3;
 
+/** Absolute camera-pose presets ("photo mode") — fly toward the galactic band,
+ *  ending just inside the 3D star volume so the traversal feel is obvious. */
+const VIEW_POSES: Record<ViewId, { pos: THREE.Vector3; target: THREE.Vector3 }> = {
+  'galactic-band': {
+    pos: GALACTIC_CENTER_DIR.clone().multiplyScalar(120).addScaledVector(GALACTIC_NORMAL, 10),
+    target: GALACTIC_CENTER_DIR.clone().multiplyScalar(60),
+  },
+};
+
 interface Fly {
   fromDist: number;
   toDist: number;
   /** Unit vector from the click-time camera toward the target */
   dir: THREE.Vector3;
   /** Wall-clock seconds when the fly started */
+  t0: number;
+}
+
+interface ViewFly {
+  fromPos: THREE.Vector3;
+  toPos: THREE.Vector3;
+  fromTarget: THREE.Vector3;
+  toTarget: THREE.Vector3;
   t0: number;
 }
 
@@ -74,11 +92,17 @@ export function CameraRig() {
   const controlsRef = useRef<OrbitControlsImpl>(null);
   const selectedId = useUiStore((s) => s.selectedId);
   const focusTick = useUiStore((s) => s.focusTick);
+  const viewId = useUiStore((s) => s.viewId);
+  const viewTick = useUiStore((s) => s.viewTick);
   const focus = useRef({
     pos: new THREE.Vector3(0, 0, 0),
     targetDist: OVERVIEW_DIST,
     fly: null as Fly | null,
   });
+  /** An absolute camera-pose flight (VIEW presets). While active it owns
+   *  both camera.position and controls.target; any selection or gesture
+   *  cancels it. */
+  const viewFly = useRef<ViewFly | null>(null);
   /** The user's pan as a world-space offset from the followed body. The
    *  follow derives `controls.target = body + panOffset` each frame, so a pan
    *  slides the body off-center instead of fighting the re-aim. */
@@ -96,6 +120,8 @@ export function CameraRig() {
 
   useEffect(() => {
     const f = focus.current;
+    // A selection is fresh intent: cancel any view flight.
+    viewFly.current = null;
     if (selectedId === null) {
       f.pos.set(0, 0, 0);
       f.targetDist = OVERVIEW_DIST;
@@ -125,9 +151,44 @@ export function CameraRig() {
     };
   }, [selectedId, focusTick]);
 
+  useEffect(() => {
+    const pose = viewId ? VIEW_POSES[viewId] : null;
+    const camera = controlsRef.current?.object;
+    const controls = controlsRef.current;
+    if (!pose || !camera) return;
+    // A view is fresh intent: cancel any body fly and pan stick.
+    focus.current.fly = null;
+    panOffset.current.set(0, 0, 0);
+    panPauseUntil.current = 0;
+    viewFly.current = {
+      fromPos: camera.position.clone(),
+      toPos: pose.pos,
+      fromTarget: controls ? controls.target.clone() : new THREE.Vector3(),
+      toTarget: pose.target,
+      t0: performance.now() / 1000,
+    };
+  }, [viewId, viewTick]);
+
   useFrame(({ camera }, dt) => {
     const f = focus.current;
     const controls = controlsRef.current;
+
+    // A VIEW flight owns both camera.position and controls.target outright —
+    // skip the follow entirely so nothing re-aims at the selected body.
+    const vf = viewFly.current;
+    if (vf) {
+      const elapsed = performance.now() / 1000 - vf.t0;
+      const t = Math.min(1, elapsed / FLY_DURATION);
+      const ease = 1 - Math.pow(1 - t, 3);
+      camera.position.lerpVectors(vf.fromPos, vf.toPos, ease);
+      controls?.target.lerpVectors(vf.fromTarget, vf.toTarget, ease);
+      controls?.update();
+      if (t >= 1) {
+        viewFly.current = null;
+        useUiStore.getState().setView(null);
+      }
+      return;
+    }
 
     const target =
       selectedId !== null ? resolveTarget(selectedId, useTimeStore.getState().days, _pos) : null;
@@ -192,6 +253,8 @@ export function CameraRig() {
       maxDistance={140}
       onStart={() => {
         focus.current.fly = null;
+        viewFly.current = null;
+        useUiStore.getState().setView(null);
         interacting.current = true;
         panPauseUntil.current = performance.now() / 1000 + PAN_STICK_SECONDS;
       }}

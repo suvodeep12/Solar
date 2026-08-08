@@ -19,6 +19,9 @@ import { Sun } from './Sun.tsx';
 import { MilkyWay } from './sky/MilkyWay.tsx';
 import { Meteors } from './sky/Meteors.tsx';
 import { Starfield } from './sky/Starfield.tsx';
+import { GalacticDisk } from './sky/GalacticDisk.tsx';
+import { GalacticGlow } from './sky/GalacticGlow.tsx';
+import { GalacticDust } from './sky/GalacticDust.tsx';
 
 /** Pull the renderer's real max anisotropy into the shared texture config. */
 function MaxAnisotropy() {
@@ -79,6 +82,9 @@ export function SolarSystemScene() {
       <pointLight position={[0, 0, 0]} intensity={3} decay={0} />
 
       <Starfield />
+      <GalacticDisk />
+      <GalacticGlow />
+      <GalacticDust />
       <MilkyWay />
 
       <CameraRig />
