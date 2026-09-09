@@ -10,6 +10,7 @@ MERN app: React 19 + Vite SPA in `client/`, Express 5 + Mongoose API in `server/
 - Bleeding edge only: newest stable majors of tools/libraries; prefer fresh solutions over comfortable ones.
 - Any skill, MCP server, plugin, or tool may be used; installing new software on the machine is fine once confirmed by the user.
 - Record every confirmed improvement here so it survives sessions.
+- Automatic taste skill (user, 2026-09-09): before UI, layout, styling, animation, or 3D visual work, read and apply `design-taste-frontend` from `C:/Users/Suvo/.agents/skills/design-taste-frontend/SKILL.md` without waiting for an explicit invocation. Use the current default skill, not `design-taste-frontend-v1`. Apply its context-appropriate visual guidance to Solar's existing astronomy aesthetic; preserve scope, architecture, accessibility, and performance. Verify visual changes in the real browser. If the skill is unavailable, report that instead of silently skipping it.
 
 ## Commands
 
