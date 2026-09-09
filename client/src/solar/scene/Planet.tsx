@@ -23,6 +23,24 @@ const SUN_DIR = new THREE.Vector3();
 const MOON_DIR = new THREE.Vector3();
 const SPOT_POS = new THREE.Vector3();
 
+function SelectionMarker({ radius }: { radius: number }) {
+  const ref = useRef<THREE.Mesh>(null);
+
+  useFrame(({ clock }) => {
+    const marker = ref.current;
+    if (!marker) return;
+    marker.rotation.z = clock.elapsedTime * 0.45;
+    marker.scale.setScalar(1 + Math.sin(clock.elapsedTime * 2.4) * 0.035);
+  });
+
+  return (
+    <mesh ref={ref} rotation-x={-Math.PI / 2} position-y={0.02} renderOrder={4}>
+      <ringGeometry args={[radius * 1.35, radius * 1.42, 64]} />
+      <meshBasicMaterial color="#38bdf8" transparent opacity={0.9} depthWrite={false} />
+    </mesh>
+  );
+}
+
 /** Fresnel rim glow per body — Earth bright, Venus soft, Mars a dusty haze. */
 const ATMOSPHERES: Record<
   string,
@@ -364,12 +382,7 @@ export const Planet = memo(function Planet({ spec }: { spec: BodySpec }) {
           <Moon key={m.name} parentId={spec.id} moon={m} planetRadius={scene.radiusScene} />
         ))}
 
-        {isSelected && (
-          <mesh rotation-x={-Math.PI / 2} position-y={0.02}>
-            <ringGeometry args={[scene.radiusScene * 1.35, scene.radiusScene * 1.42, 64]} />
-            <meshBasicMaterial color="#38bdf8" transparent opacity={0.9} depthWrite={false} />
-          </mesh>
-        )}
+        {isSelected && <SelectionMarker radius={scene.radiusScene} />}
       </group>
 
       <Html center zIndexRange={[40, 0]} className="pointer-events-none">

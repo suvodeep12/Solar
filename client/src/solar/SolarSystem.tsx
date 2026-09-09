@@ -13,7 +13,7 @@ export function SolarSystem() {
   return (
     <div className="fixed inset-0">
       <Canvas
-        camera={{ position: [0, 18, 36], fov: 55, near: 0.1, far: 600 }}
+        camera={{ position: [-14.4, 7.2, 21.6], fov: 50, near: 0.1, far: 600 }}
         dpr={[1, 2]}
         gl={{ antialias: true }}
         onPointerMissed={() => useUiStore.getState().select(null)}

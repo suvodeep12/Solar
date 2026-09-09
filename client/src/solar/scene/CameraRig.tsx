@@ -13,6 +13,8 @@ import { GALACTIC_CENTER_DIR, GALACTIC_NORMAL } from './sky/galactic.ts';
 
 const OVERVIEW_DIST = Math.sqrt(18 * 18 + 36 * 36);
 const FLY_DURATION = 1.3;
+const INTRO_DURATION = 2.2;
+const INTRO_SCALE = 1.8;
 /** A manual pan that moves the target this far from the followed body sticks
  *  for PAN_STICK_SECONDS, then the follow glides back. */
 const PAN_THRESHOLD = 0.2;
@@ -103,6 +105,7 @@ export function CameraRig() {
    *  both camera.position and controls.target; any selection or gesture
    *  cancels it. */
   const viewFly = useRef<ViewFly | null>(null);
+  const introFly = useRef<ViewFly | null>(null);
   /** The user's pan as a world-space offset from the followed body. The
    *  follow derives `controls.target = body + panOffset` each frame, so a pan
    *  slides the body off-center instead of fighting the re-aim. */
@@ -120,6 +123,7 @@ export function CameraRig() {
 
   useEffect(() => {
     const f = focus.current;
+    introFly.current = null;
     // A selection is fresh intent: cancel any view flight.
     viewFly.current = null;
     if (selectedId === null) {
@@ -157,6 +161,7 @@ export function CameraRig() {
     const controls = controlsRef.current;
     if (!pose || !camera) return;
     // A view is fresh intent: cancel any body fly and pan stick.
+    introFly.current = null;
     focus.current.fly = null;
     panOffset.current.set(0, 0, 0);
     panPauseUntil.current = 0;
@@ -169,9 +174,36 @@ export function CameraRig() {
     };
   }, [viewId, viewTick]);
 
+  useEffect(() => {
+    const camera = controlsRef.current?.object;
+    if (!camera || introFly.current) return;
+    const controls = controlsRef.current;
+    const fromPos = camera.position.clone();
+    const fromTarget = controls?.target.clone() ?? new THREE.Vector3();
+    introFly.current = {
+      fromPos,
+      toPos: fromPos.clone().multiplyScalar(1 / INTRO_SCALE),
+      fromTarget,
+      toTarget: fromTarget.clone(),
+      t0: performance.now() / 1000,
+    };
+  }, []);
+
   useFrame(({ camera }, dt) => {
     const f = focus.current;
     const controls = controlsRef.current;
+
+    const intro = introFly.current;
+    if (intro) {
+      const elapsed = performance.now() / 1000 - intro.t0;
+      const t = Math.min(1, elapsed / INTRO_DURATION);
+      const ease = 1 - Math.pow(1 - t, 3);
+      camera.position.lerpVectors(intro.fromPos, intro.toPos, ease);
+      controls?.target.lerpVectors(intro.fromTarget, intro.toTarget, ease);
+      controls?.update();
+      if (t >= 1) introFly.current = null;
+      return;
+    }
 
     // A VIEW flight owns both camera.position and controls.target outright —
     // skip the follow entirely so nothing re-aims at the selected body.
@@ -252,6 +284,7 @@ export function CameraRig() {
       minDistance={isMoon ? 0.15 : 0.6}
       maxDistance={140}
       onStart={() => {
+        introFly.current = null;
         focus.current.fly = null;
         viewFly.current = null;
         useUiStore.getState().setView(null);
