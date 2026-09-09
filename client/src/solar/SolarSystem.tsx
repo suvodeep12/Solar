@@ -21,13 +21,13 @@ export function SolarSystem() {
         <SolarSystemScene />
       </Canvas>
 
-      <div className="pointer-events-none absolute left-4 top-4">
+      <div className="hud-time">
         <TimeControls />
       </div>
-      <div className="pointer-events-none absolute right-4 top-4">
+      <div className="hud-info">
         <InfoPanel />
       </div>
-      <div className="pointer-events-none absolute bottom-4 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2">
+      <div className="hud-footer">
         <TextureToggle />
         <KeyboardHints />
       </div>

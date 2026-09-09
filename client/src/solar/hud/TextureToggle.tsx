@@ -7,16 +7,8 @@ export function TextureToggle() {
 
   const option = (mode: TextureMode, label: string) => (
     <button
-      className="px-3 py-1 font-mono text-xs uppercase tracking-widest transition-colors"
-      style={
-        textureMode === mode
-          ? {
-              color: '#fff',
-              backgroundColor: 'rgba(56,189,248,0.25)',
-              borderColor: 'rgba(56,189,248,0.7)',
-            }
-          : { color: 'rgba(255,255,255,0.55)' }
-      }
+      className="hud-button"
+      aria-pressed={textureMode === mode}
       onClick={() => setTextureMode(mode)}
     >
       {label}
@@ -24,7 +16,7 @@ export function TextureToggle() {
   );
 
   return (
-    <div className="pointer-events-auto flex overflow-hidden rounded-lg border border-white/10 bg-black/50 backdrop-blur-sm">
+    <div role="group" aria-label="Texture style" className="hud-panel flex gap-2 !p-2">
       {option('procedural', 'Procedural')}
       {option('nasa', 'NASA')}
     </div>

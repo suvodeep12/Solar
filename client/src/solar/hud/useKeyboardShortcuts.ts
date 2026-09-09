@@ -21,6 +21,7 @@ export function useKeyboardShortcuts() {
         return;
       }
       const key = e.key.toLowerCase();
+      if (key === ' ' && target?.tagName === 'SUMMARY') return;
       if (!HANDLED.has(key)) return;
       e.preventDefault();
       const active = document.activeElement as HTMLElement | null;

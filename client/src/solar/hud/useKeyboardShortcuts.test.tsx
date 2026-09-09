@@ -113,4 +113,16 @@ describe('useKeyboardShortcuts', () => {
     expect(useTimeStore.getState().mode).toBe('paused');
     button.remove();
   });
+
+  it('leaves Space on a disclosure to the browser without toggling playback', () => {
+    const { getByText } = render(
+      <details>
+        <summary>Explore</summary>Presets
+      </details>,
+    );
+    const event = new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true });
+    getByText('Explore').dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+    expect(useTimeStore.getState().mode).toBe('simulated');
+  });
 });

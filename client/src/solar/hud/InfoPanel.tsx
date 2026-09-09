@@ -10,9 +10,9 @@ function isStar(spec: Spec): spec is StarSpec {
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between gap-6 border-b border-white/5 py-1.5 last:border-0">
-      <span className="font-mono text-[11px] uppercase tracking-wider text-white/50">{label}</span>
-      <span className="font-mono text-xs text-white/90">{value}</span>
+    <div className="flex justify-between gap-4 border-b border-white/10 py-2 last:border-0">
+      <span className="font-mono text-xs text-slate-300">{label}</span>
+      <span className="min-w-0 text-right font-mono text-sm text-white">{value}</span>
     </div>
   );
 }
@@ -28,20 +28,14 @@ export function InfoPanel() {
   if (moonRef) {
     const { parent, moon } = moonRef;
     return (
-      <div className="pointer-events-auto w-72 rounded-lg border border-white/10 bg-black/60 p-4 backdrop-blur-md">
-        <div className="mb-2 flex items-start justify-between">
+      <div className="hud-panel">
+        <div className="mb-3 flex items-start justify-between gap-3">
           <div>
-            <div className="text-xs font-mono uppercase tracking-[0.3em] text-sky-300/80">
-              Moon of {parent.name}
-            </div>
-            <h2 className="text-xl font-semibold text-white">{moon.name}</h2>
+            <div className="hud-label !text-sky-200">Moon of {parent.name}</div>
+            <h2 className="mt-1 text-2xl font-semibold text-white">{moon.name}</h2>
           </div>
-          <button
-            className="rounded px-1.5 font-mono text-white/50 transition-colors hover:bg-white/10 hover:text-white"
-            onClick={() => select(null)}
-            aria-label="Close"
-          >
-            {'\u2715'}
+          <button className="hud-button shrink-0" onClick={() => select(null)} aria-label="Close">
+            Close
           </button>
         </div>
         <Row label="Radius" value={`${moon.radiusKm.toLocaleString()} km`} />
@@ -50,7 +44,7 @@ export function InfoPanel() {
           value={`${moon.distancePlanetRadii.toFixed(1)} R\u00a0\u00b7\u00a0${(moon.distancePlanetRadii * parent.radiusKm).toLocaleString()} km`}
         />
         <Row label="Orbit" value={`${moon.periodDays.toLocaleString()} days`} />
-        <p className="mt-3 text-xs leading-relaxed text-white/70">
+        <p className="mt-4 text-sm leading-relaxed text-slate-300">
           Orbits {parent.name} once every {moon.periodDays.toLocaleString()} days.
         </p>
       </div>
@@ -61,20 +55,14 @@ export function InfoPanel() {
   const subtitle = isStar(spec) ? 'Star' : spec.kind === 'dwarf' ? 'Dwarf planet' : 'Planet';
 
   return (
-    <div className="pointer-events-auto w-72 rounded-lg border border-white/10 bg-black/60 p-4 backdrop-blur-md">
-      <div className="mb-2 flex items-start justify-between">
+    <div className="hud-panel">
+      <div className="mb-3 flex items-start justify-between gap-3">
         <div>
-          <div className="text-xs font-mono uppercase tracking-[0.3em] text-sky-300/80">
-            {subtitle}
-          </div>
-          <h2 className="text-xl font-semibold text-white">{spec.name}</h2>
+          <div className="hud-label !text-sky-200">{subtitle}</div>
+          <h2 className="mt-1 text-2xl font-semibold text-white">{spec.name}</h2>
         </div>
-        <button
-          className="rounded px-1.5 font-mono text-white/50 transition-colors hover:bg-white/10 hover:text-white"
-          onClick={() => select(null)}
-          aria-label="Close"
-        >
-          {'\u2715'}
+        <button className="hud-button shrink-0" onClick={() => select(null)} aria-label="Close">
+          Close
         </button>
       </div>
       <Row label="Radius" value={`${spec.radiusKm.toLocaleString()} km`} />
@@ -98,7 +86,7 @@ export function InfoPanel() {
           <Row label="Moons" value={String(spec.moonsCount)} />
         </>
       )}
-      <p className="mt-3 text-xs leading-relaxed text-white/70">{spec.fact}</p>
+      <p className="mt-4 text-sm leading-relaxed text-slate-300">{spec.fact}</p>
     </div>
   );
 }
